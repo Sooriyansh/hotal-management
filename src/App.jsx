@@ -2045,7 +2045,7 @@ function Chatbot() {
       addMessage({ from: "bot", text: `${orderNote}${result.reply}`, source: result.source });
       speak(`${orderNote}${result.reply}`);
     } catch {
-      const fallback = "Please contact our reception team for the latest information.";
+      const fallback = "I couldn't confirm that right now. Please try again in a moment.";
       addMessage({ from: "bot", text: fallback, source: "fallback" });
       speak(fallback);
     } finally {

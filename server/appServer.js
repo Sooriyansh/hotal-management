@@ -1,6 +1,6 @@
 import { createServer } from "node:http";
 import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { extname, join, relative, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
 import {
   calculateBookingTotals,
@@ -24,6 +24,27 @@ loadDotEnv();
 
 const port = Number(process.env.PORT || 5050);
 const geminiModel = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+const clientDistDir = resolve(process.cwd(), "dist");
+const clientIndexFile = join(clientDistDir, "index.html");
+
+const mimeTypes = {
+  ".css": "text/css; charset=utf-8",
+  ".gif": "image/gif",
+  ".html": "text/html; charset=utf-8",
+  ".ico": "image/x-icon",
+  ".jpeg": "image/jpeg",
+  ".jpg": "image/jpeg",
+  ".js": "application/javascript; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
+  ".map": "application/json; charset=utf-8",
+  ".png": "image/png",
+  ".svg": "image/svg+xml",
+  ".txt": "text/plain; charset=utf-8",
+  ".webp": "image/webp",
+  ".woff": "font/woff",
+  ".woff2": "font/woff2",
+  ".xml": "application/xml; charset=utf-8"
+};
 
 let database = loadDatabase();
 
@@ -278,6 +299,10 @@ const server = createServer(async (request, response) => {
       return;
     }
 
+    if (serveClientApp(request, response, path)) {
+      return;
+    }
+
     sendJson(response, { error: "Not found" }, 404);
   } catch (error) {
     sendJson(response, { error: error.message || "Server error" }, 500);
@@ -287,6 +312,38 @@ const server = createServer(async (request, response) => {
 server.listen(port, () => {
   console.log(`AI Concierge API running on http://localhost:${port}`);
 });
+
+function serveClientApp(request, response, path) {
+  if (request.method !== "GET" || path.startsWith("/api")) {
+    return false;
+  }
+
+  if (!existsSync(clientIndexFile)) {
+    return false;
+  }
+
+  const requestedPath = path === "/" ? "/index.html" : path;
+  const normalizedPath = requestedPath.replace(/^\/+/, "");
+  const resolvedPath = resolve(clientDistDir, normalizedPath);
+  const relativePath = relative(clientDistDir, resolvedPath);
+
+  if (relativePath.startsWith("..")) {
+    return false;
+  }
+
+  const isAssetRequest = extname(normalizedPath) !== "";
+  const filePath = isAssetRequest ? resolvedPath : clientIndexFile;
+
+  if (!existsSync(filePath)) {
+    return false;
+  }
+
+  const contentType = mimeTypes[extname(filePath).toLowerCase()] || "application/octet-stream";
+  const body = readFileSync(filePath);
+  response.writeHead(200, { "Content-Type": contentType });
+  response.end(body);
+  return true;
+}
 
 function buildBootstrapPayload() {
   return {
@@ -776,7 +833,7 @@ async function callGemini(message, history, apiResults) {
 
   const geminiResponse = await fetchWithRetry(endpoint, payload);
   const data = await geminiResponse.json();
-  return data.candidates?.[0]?.content?.parts?.map((part) => part.text).join("").trim() || "Please contact our reception team for the latest information.";
+  return data.candidates?.[0]?.content?.parts?.map((part) => part.text).join("").trim() || "I couldn't confirm that right now. Please try again in a moment.";
 }
 
 async function fetchWithRetry(endpoint, payload) {
@@ -828,6 +885,7 @@ Rules:
 5. Never create fake room prices.
 6. Never create fake offers.
 7. If information is unavailable say: "Please contact our reception team for the latest information."
+7. If information is unavailable say: "I couldn't confirm that right now. Please try again in a moment."
 8. Be friendly, professional and luxury hospitality focused.
 9. Recommend rooms, food, events and spa services whenever helpful.
 10. Maintain conversational memory during the session.
@@ -900,7 +958,7 @@ function buildGroundedFallback(message, apiResults) {
 
   if (apiResults.getActiveOffers) return `Active offers: ${apiResults.getActiveOffers.map((offer) => `${offer.name} - ${offer.discount}`).join("; ")}.`;
   if (menu) return `Menu highlights: ${menu.slice(0, 4).map((item) => `${item.name} (${formatINR(item.price)})`).join(", ")}.`;
-  return "Please contact our reception team for the latest information.";
+  return "I couldn't confirm that right now. Please try again in a moment.";
 }
 
 function quickActions() {
