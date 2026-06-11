@@ -1,4 +1,13 @@
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "/api";
+const EMPTY_BOOTSTRAP = {
+  bookings: [],
+  orders: [],
+  payments: [],
+  reservations: [],
+  reviews: [],
+  wishlist: [],
+  notifications: []
+};
 
 function authHeaders() {
   const token = localStorage.getItem("grandLuxuryAuthToken");
@@ -6,14 +15,22 @@ function authHeaders() {
 }
 
 async function request(path, options = {}) {
-  const response = await fetch(`${API_BASE}${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...authHeaders(),
-      ...(options.headers || {})
-    },
-    ...options
-  });
+  let response;
+  try {
+    response = await fetch(`${API_BASE}${path}`, {
+      headers: {
+        "Content-Type": "application/json",
+        ...authHeaders(),
+        ...(options.headers || {})
+      },
+      ...options
+    });
+  } catch (error) {
+    if (import.meta.env.PROD && path === "/bootstrap") {
+      return EMPTY_BOOTSTRAP;
+    }
+    throw error;
+  }
 
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
