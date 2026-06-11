@@ -456,6 +456,37 @@
   ],
   "bookings": [
     {
+      "id": "BK-GL-260611-102",
+      "invoice": "INV-ROOM-260611-103",
+      "qr": "GL|BK-GL-260611-102|Confirmed",
+      "roomId": "executive",
+      "roomType": "Executive Room",
+      "roomNumber": "301",
+      "checkIn": "2026-06-05",
+      "checkOut": "2026-06-19",
+      "adults": 2,
+      "children": 0,
+      "nights": 14,
+      "pricePerNight": 12000,
+      "taxes": 30240,
+      "discount": 16800,
+      "total": 181440,
+      "paymentMethod": "UPI",
+      "paymentStatus": "Paid",
+      "status": "Confirmed",
+      "customer": {
+        "fullName": "h",
+        "mobile": "7580900739",
+        "email": "h@gmail.com",
+        "address": "db gd",
+        "requests": "bh y"
+      },
+      "rewardPoints": 1814,
+      "userId": null,
+      "createdAt": "2026-06-11T06:39:19.729Z",
+      "notification": "Room booked notification sent by email, WhatsApp, and in-app."
+    },
+    {
       "id": "BK-GL-260610-101",
       "invoice": "INV-ROOM-260610-101",
       "qr": "GL|BK-GL-260610-101|Confirmed",
@@ -547,6 +578,17 @@
   ],
   "payments": [
     {
+      "id": "PAY-GL-260611-203",
+      "sourceId": "BK-GL-260611-102",
+      "type": "Room Booking",
+      "method": "UPI",
+      "status": "Paid",
+      "amount": 181440,
+      "refundStatus": "Not Requested",
+      "userId": null,
+      "createdAt": "2026-06-11T06:39:19.729Z"
+    },
+    {
       "id": "PAY-GL-260610-202",
       "sourceId": "ORD-GL-260610-202",
       "type": "Food Order",
@@ -580,6 +622,21 @@
   ],
   "reservations": [
     {
+      "id": "RES-GL-260611-303",
+      "table": "T1",
+      "date": "2026-06-19",
+      "time": "20:00",
+      "guests": "2 guests",
+      "occasion": "Dinner",
+      "customer": {
+        "name": "hyy",
+        "phone": "7777777777"
+      },
+      "status": "Reserved",
+      "userId": null,
+      "createdAt": "2026-06-11T06:38:17.656Z"
+    },
+    {
       "id": "RES-GL-260610-302",
       "table": "T1",
       "date": "2026-06-11",
@@ -612,6 +669,22 @@
   "reviews": [],
   "wishlist": [],
   "notifications": [
+    {
+      "id": "054664d2-fc3d-487a-affb-bfc594cd922c",
+      "type": "booking",
+      "title": "Room booked successfully",
+      "message": "Executive Room 301 is confirmed.",
+      "read": false,
+      "createdAt": "2026-06-11T06:39:19.729Z"
+    },
+    {
+      "id": "fc850121-6b0d-49de-9875-3270457e650f",
+      "type": "reservation",
+      "title": "Table reserved successfully",
+      "message": "Table T1 reserved for hyy.",
+      "read": false,
+      "createdAt": "2026-06-11T06:38:17.660Z"
+    },
     {
       "id": "fd2d3f52-3776-4128-85b8-92ab5e5e7976",
       "type": "auth",
@@ -655,11 +728,11 @@
   ],
   "passwordResets": [],
   "counters": {
-    "BK": 101,
-    "INV": 102,
+    "BK": 102,
+    "INV": 103,
     "ORD": 202,
-    "RES": 302,
-    "PAY": 202,
+    "RES": 303,
+    "PAY": 203,
     "REV": 1
   }
 }

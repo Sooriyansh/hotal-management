@@ -6,8 +6,6 @@ import { useDispatch, useSelector } from "react-redux";
 import { Toaster, toast } from "sonner";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Pagination, Autoplay } from "swiper/modules";
-import { Canvas } from "@react-three/fiber";
-import { Environment, Float, OrbitControls } from "@react-three/drei";
 import {
   Area,
   AreaChart,
@@ -72,10 +70,12 @@ import {
   Utensils,
   Video,
   Volume2,
+  VolumeX,
   WandSparkles,
   Wifi,
   X
 } from "lucide-react";
+import heroVideo from "../video/video.mp4";
 import {
   addToCart,
   applyCoupon,
@@ -124,8 +124,6 @@ import {
   forgotPassword as apiForgotPassword,
   toggleWishlist as apiToggleWishlist
 } from "./services/appApi.js";
-
-const heroVideo = "https://videos.pexels.com/video-files/3121327/3121327-uhd_2560_1440_24fps.mp4";
 
 const navItems = [
   ["Home", "/"],
@@ -573,7 +571,7 @@ function Home() {
         </div>
       </section>
       <LuxuryCounters />
-      <ThreeDHotelExperience />
+      <HotelVideoExperience />
       <VirtualTour />
       <FeaturedRooms />
       <RestaurantShowcase />
@@ -604,8 +602,8 @@ function BookingPanel() {
       </div>
       <form className="grid gap-3" onSubmit={roomForm.handleSubmit((data) => dispatch(setRoomSearch(data)))}>
         <div className="grid gap-3 sm:grid-cols-2">
-          <input className="luxury-input" type="date" {...roomForm.register("checkIn")} />
-          <input className="luxury-input" type="date" {...roomForm.register("checkOut")} />
+          <input className="luxury-input" type="date" placeholder="Check-in date" {...roomForm.register("checkIn")} />
+          <input className="luxury-input" type="date" placeholder="Check-out date" {...roomForm.register("checkOut")} />
           <select className="luxury-input" {...roomForm.register("adults")}><option>1 adult</option><option>2 adults</option><option>3 adults</option><option>4 adults</option><option>6 adults</option></select>
           <select className="luxury-input" {...roomForm.register("children")}><option>0 children</option><option>1 child</option><option>2 children</option><option>3 children</option></select>
           <select className="luxury-input" {...roomForm.register("room")}>{rooms.map((room) => <option key={room.id}>{room.name}</option>)}</select>
@@ -615,8 +613,8 @@ function BookingPanel() {
       <div className="my-5 h-px bg-gold-line" />
       <form className="grid gap-3" onSubmit={tableForm.handleSubmit(() => dispatch(openReservationModal()))}>
         <div className="grid gap-3 sm:grid-cols-2">
-          <input className="luxury-input" type="date" {...tableForm.register("date")} />
-          <input className="luxury-input" type="time" {...tableForm.register("time")} />
+          <input className="luxury-input" type="date" placeholder="Reservation date" {...tableForm.register("date")} />
+          <input className="luxury-input" type="time" placeholder="Reservation time" {...tableForm.register("time")} />
           <select className="luxury-input" {...tableForm.register("guests")}><option>2</option><option>4</option><option>6</option><option>8</option></select>
           <select className="luxury-input" {...tableForm.register("occasion")}><option>Dinner</option><option>Birthday</option><option>Business</option><option>Anniversary</option></select>
         </div>
@@ -641,58 +639,45 @@ function LuxuryCounters() {
   );
 }
 
-function ThreeDHotelExperience() {
+function HotelVideoExperience() {
+  const [isMuted, setIsMuted] = useState(true);
+  const videoRef = useRef(null);
+
+  useEffect(() => {
+    if (!videoRef.current) return;
+    videoRef.current.muted = isMuted;
+    videoRef.current.volume = isMuted ? 0 : 0.85;
+  }, [isMuted]);
+
   return (
     <section className="py-20">
       <div className="section-shell grid items-center gap-8 lg:grid-cols-[.9fr_1.1fr]">
         <div>
-          <p className="mb-3 text-xs font-bold uppercase tracking-[0.28em] text-gold">3D hotel model</p>
-          <h2 className="font-display text-5xl font-bold">Interactive arrival, rooms, and skyline preview.</h2>
-          <p className="mt-5 leading-8 text-pearl/68">Drag the model, orbit the building, and preview the premium property language before guests choose a room or tour.</p>
+          <p className="mb-3 text-xs font-bold uppercase tracking-[0.28em] text-gold">Cinematic hotel video</p>
+          <h2 className="font-display text-5xl font-bold">Autoplay preview with sound you can enable anytime.</h2>
+          <p className="mt-5 leading-8 text-pearl/68">The 3D model has been replaced with your local hotel video. It starts muted for autoplay support, and guests can unmute it with one tap.</p>
           <div className="mt-6 grid gap-3 sm:grid-cols-3">
-            {["3D Room Tours", "AR Menu Preview", "Digital Room Key"].map((item) => <span key={item} className="rounded-md border border-gold/25 bg-gold/10 px-4 py-3 text-sm font-semibold text-gold">{item}</span>)}
+            {[["Autoplay", "Muted on load"], ["Sound", "Toggle on demand"], ["Source", "video/video.mp4"]].map(([title, copy]) => <span key={title} className="rounded-md border border-gold/25 bg-gold/10 px-4 py-3 text-sm font-semibold text-gold"><span className="block text-xs uppercase tracking-[0.18em] text-gold/70">{title}</span><span className="mt-1 block text-base text-pearl">{copy}</span></span>)}
           </div>
         </div>
-        <div className="h-[420px] overflow-hidden rounded-lg border border-gold/25 bg-black shadow-glow">
-          <Canvas camera={{ position: [4, 3, 6], fov: 42 }}>
-            <ambientLight intensity={0.7} />
-            <pointLight position={[4, 5, 4]} intensity={2.2} color="#ffd700" />
-            <Float speed={1.4} rotationIntensity={0.45} floatIntensity={0.6}>
-              <HotelModel />
-            </Float>
-            <Environment preset="city" />
-            <OrbitControls enableZoom={false} autoRotate autoRotateSpeed={0.8} />
-          </Canvas>
+        <div className="relative h-[420px] overflow-hidden rounded-lg border border-gold/25 bg-black shadow-glow">
+          <video ref={videoRef} className="h-full w-full object-cover" autoPlay muted={isMuted} loop playsInline poster={gallery[0]}>
+            <source src={heroVideo} type="video/mp4" />
+          </video>
+          <div className="absolute inset-0 bg-gradient-to-t from-midnight/65 via-transparent to-transparent" />
+          <div className="absolute inset-x-4 bottom-4 flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/45 px-4 py-3 backdrop-blur">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.24em] text-gold">Hotel preview</p>
+              <p className="text-sm text-pearl/75">Autoplaying and muted by default.</p>
+            </div>
+            <button type="button" onClick={() => setIsMuted((value) => !value)} className="inline-flex items-center gap-2 rounded-md border border-gold/40 px-4 py-2 text-sm font-bold text-gold">
+              {isMuted ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+              {isMuted ? "Enable Sound" : "Mute Video"}
+            </button>
+          </div>
         </div>
       </div>
     </section>
-  );
-}
-
-function HotelModel() {
-  return (
-    <group>
-      <mesh position={[0, -0.35, 0]}>
-        <boxGeometry args={[3.8, 0.24, 2.6]} />
-        <meshStandardMaterial color="#1A1A1A" metalness={0.4} roughness={0.35} />
-      </mesh>
-      {[-1.15, 0, 1.15].map((x, index) => (
-        <mesh key={x} position={[x, 0.6 + index * 0.22, 0]}>
-          <boxGeometry args={[0.92, 2 + index * 0.42, 1.4]} />
-          <meshStandardMaterial color={index === 1 ? "#D4AF37" : "#222222"} metalness={0.55} roughness={0.22} />
-        </mesh>
-      ))}
-      {Array.from({ length: 18 }).map((_, index) => (
-        <mesh key={index} position={[-1.55 + (index % 6) * 0.62, 0.25 + Math.floor(index / 6) * 0.55, -0.73]}>
-          <boxGeometry args={[0.18, 0.18, 0.02]} />
-          <meshStandardMaterial color="#FFD700" emissive="#D4AF37" emissiveIntensity={0.7} />
-        </mesh>
-      ))}
-      <mesh position={[0, 2.45, 0]}>
-        <coneGeometry args={[1.05, 0.82, 4]} />
-        <meshStandardMaterial color="#D4AF37" metalness={0.8} roughness={0.18} />
-      </mesh>
-    </group>
   );
 }
 
@@ -1080,6 +1065,7 @@ function BookingWorkflow() {
   const navigate = useNavigate();
   const bookings = useSelector((state) => state.booking.bookings);
   const [booking, setBooking] = useState(null);
+  const [bookingNotice, setBookingNotice] = useState("");
   const { register, handleSubmit, watch, reset } = useForm({
     defaultValues: {
       checkIn: "",
@@ -1112,12 +1098,14 @@ function BookingWorkflow() {
         dispatch(createBooking(created));
         if (result.payment) dispatch(createPayment(result.payment));
         setBooking(created);
-        toast.success(result.message || `Booking ID: ${created.id}`);
+        setBookingNotice(result.message || "Room Booked Successfully");
+        toast.success(result.message || "Room Booked Successfully");
         navigate(`/booking/${created.id}`);
         reset({ ...data, fullName: "", mobile: "", email: "", address: "", requests: "" });
       })
       .catch((error) => {
         setBooking({ blocked: true, roomType: rooms.find((item) => item.id === data.roomId)?.name || "Selected room" });
+        setBookingNotice("");
         toast.error(error.message || "Room Not Available");
       });
   };
@@ -1136,10 +1124,10 @@ function BookingWorkflow() {
       <form onSubmit={handleSubmit(submitBooking)} className="grid gap-6 xl:grid-cols-[1.2fr_.8fr]">
         <div className="grid gap-5">
           <div className="grid gap-4 md:grid-cols-2">
-            <WorkflowField step="1" label="Select Check-In Date"><input className="luxury-input" type="date" {...register("checkIn", { required: true })} /></WorkflowField>
-            <WorkflowField step="2" label="Select Check-Out Date"><input className="luxury-input" type="date" {...register("checkOut", { required: true })} /></WorkflowField>
-            <WorkflowField step="3" label="Adults"><input className="luxury-input" type="number" min="1" {...register("adults", { required: true })} /></WorkflowField>
-            <WorkflowField step="3" label="Children"><input className="luxury-input" type="number" min="0" {...register("children")} /></WorkflowField>
+            <WorkflowField step="1" label="Select Check-In Date"><input className="luxury-input" type="date" placeholder="Check-in date" {...register("checkIn", { required: true })} /></WorkflowField>
+            <WorkflowField step="2" label="Select Check-Out Date"><input className="luxury-input" type="date" placeholder="Check-out date" {...register("checkOut", { required: true })} /></WorkflowField>
+            <WorkflowField step="3" label="Adults"><input className="luxury-input" type="number" min="1" placeholder="Adults" {...register("adults", { required: true })} /></WorkflowField>
+            <WorkflowField step="3" label="Children"><input className="luxury-input" type="number" min="0" placeholder="Children" {...register("children")} /></WorkflowField>
           </div>
           <WorkflowField step="4" label="Choose Room Type">
             <select className="luxury-input" {...register("roomId")}>{rooms.map((room) => <option key={room.id} value={room.id}>{room.name} - {formatINR(room.price)}/Night</option>)}</select>
@@ -1157,12 +1145,12 @@ function BookingWorkflow() {
             )}
           </div>
           <div className="grid gap-4 md:grid-cols-2">
-            <WorkflowField step="6" label="Full Name"><input className="luxury-input" {...register("fullName", { required: true })} /></WorkflowField>
-            <WorkflowField step="6" label="Mobile Number"><input className="luxury-input" {...register("mobile", { required: true })} /></WorkflowField>
-            <WorkflowField step="6" label="Email"><input className="luxury-input" type="email" {...register("email", { required: true })} /></WorkflowField>
-            <WorkflowField step="6" label="Address"><input className="luxury-input" {...register("address", { required: true })} /></WorkflowField>
+            <WorkflowField step="6" label="Full Name"><input className="luxury-input" placeholder="Full name" {...register("fullName", { required: true })} /></WorkflowField>
+            <WorkflowField step="6" label="Mobile Number"><input className="luxury-input" placeholder="Mobile number" {...register("mobile", { required: true })} /></WorkflowField>
+            <WorkflowField step="6" label="Email"><input className="luxury-input" type="email" placeholder="Email address" {...register("email", { required: true })} /></WorkflowField>
+            <WorkflowField step="6" label="Address"><input className="luxury-input" placeholder="Address" {...register("address", { required: true })} /></WorkflowField>
           </div>
-          <WorkflowField step="6" label="Special Requests"><textarea className="luxury-input min-h-24" {...register("requests")} /></WorkflowField>
+          <WorkflowField step="6" label="Special Requests"><textarea className="luxury-input min-h-24" placeholder="Special requests or notes" {...register("requests")} /></WorkflowField>
         </div>
         <div className="grid gap-5">
           <div className="rounded-lg border border-gold/20 bg-gold/10 p-5">
@@ -1180,6 +1168,7 @@ function BookingWorkflow() {
           <button disabled={!roomAvailable} className="rounded-md bg-gold px-5 py-3 font-bold text-midnight disabled:cursor-not-allowed disabled:opacity-50">Confirm Booking</button>
           <div className="rounded-lg border border-white/10 p-4">
             <p className="mb-3 text-sm font-bold text-gold">Steps 9-10: Confirmation & Status</p>
+            {booking && !booking.blocked && <p className="mb-3 text-sm font-bold uppercase tracking-[0.22em] text-emerald-300">{bookingNotice || "Room Booked Successfully"}</p>}
             {booking?.blocked && <p className="text-sm text-wine">Room Not Available. Duplicate booking prevented.</p>}
             {booking && !booking.blocked && (
               <div className="grid gap-2 text-sm text-pearl/70">

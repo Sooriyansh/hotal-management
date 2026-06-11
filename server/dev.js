@@ -12,6 +12,8 @@ const children = commands.map(({ name, command, args }) => {
     env: process.env
   });
 
+  
+
   child.stdout.on("data", (data) => process.stdout.write(`[${name}] ${data}`));
   child.stderr.on("data", (data) => process.stderr.write(`[${name}] ${data}`));
   child.on("exit", (code) => {
