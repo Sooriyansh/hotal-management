@@ -9,6 +9,8 @@ import {
   generateRecordId,
   getAvailableRoomNumbers,
   getAvailableTable,
+  getRoomInventory,
+  getTableInventory,
   hashPassword,
   loadDatabase,
   sanitizeUser,
@@ -16,24 +18,27 @@ import {
   verifyPassword,
   verifyToken
 } from "./database.js";
-import { getActiveOffers, getAvailableRooms, getAvailableTables, getRestaurantMenu, getSpaServices, getWeddingPackages, hotelData } from "./hotelData.js";
+import { hotelData } from "./hotelData.js";
+
+loadDotEnv();
 
 const port = Number(process.env.PORT || 5050);
 const geminiModel = process.env.GEMINI_MODEL || "gemini-2.5-flash";
 
-loadDotEnv();
-
 let database = loadDatabase();
 
 const toolHandlers = {
-  getAvailableRooms,
-  getActiveOffers,
-  getRestaurantMenu,
-  getAvailableTables,
-  getWeddingPackages,
-  getSpaServices,
-  getEvents: () => hotelData.events,
-  getHotelContact: () => hotelData.hotel
+  getRoomInventory: () => getRoomInventory(database),
+  getAvailableRooms: () => database.rooms.filter((room) => room.availability !== "sold out"),
+  getBookingSummary: () => buildBookingSummary(),
+  getActiveOffers: () => database.offers.filter((offer) => offer.status === "active"),
+  getRestaurantMenu: () => database.restaurant.filter((item) => item.availability === "available"),
+  getTableInventory: () => getTableInventory(database),
+  getReservationSummary: () => buildReservationSummary(),
+  getWeddingPackages: () => database.events.filter((event) => event.category.toLowerCase() === "wedding"),
+  getSpaServices: () => database.spa.filter((service) => service.availability !== "sold out"),
+  getEvents: () => database.events,
+  getHotelContact: () => database.hotel
 };
 
 const server = createServer(async (request, response) => {
@@ -683,20 +688,74 @@ function selectTools(message) {
   const value = message.toLowerCase();
   const selected = new Set(["getHotelContact"]);
 
-  if (/(room|kamra|deluxe|suite|family|available|availability|price|rate|capacity)/i.test(value)) selected.add("getAvailableRooms");
+  if (/(room|rooms|kamra|deluxe|suite|family|available|availability|price|rate|capacity|kitne|ketne|count|inventory)/i.test(value)) {
+    selected.add("getAvailableRooms");
+    selected.add("getRoomInventory");
+  }
+  if (/(booking|booked|check.?in|check.?out|guest|customer|client|clicent|invoice|payment)/i.test(value)) selected.add("getBookingSummary");
   if (/(offer|discount|coupon|deal|grand20|aaj|today)/i.test(value)) selected.add("getActiveOffers");
   if (/(menu|food|dish|chinese|indian|italian|breakfast|dinner|lunch|chef|khana)/i.test(value)) selected.add("getRestaurantMenu");
-  if (/(table|reserve|reservation|restaurant booking)/i.test(value)) selected.add("getAvailableTables");
+  if (/(table|tables|reserve|reserved|reservation|restaurant booking|dining|seat)/i.test(value)) {
+    selected.add("getTableInventory");
+    selected.add("getReservationSummary");
+  }
   if (/(wedding|conference|birthday|corporate|event|hall|package)/i.test(value)) selected.add("getWeddingPackages");
   if (/(spa|massage|wellness|therapy)/i.test(value)) selected.add("getSpaServices");
 
   if (selected.size === 1) {
+    selected.add("getRoomInventory");
     selected.add("getAvailableRooms");
     selected.add("getRestaurantMenu");
     selected.add("getActiveOffers");
+    selected.add("getTableInventory");
   }
 
   return [...selected];
+}
+
+function buildBookingSummary() {
+  const activeBookings = database.bookings.filter((booking) => booking.status !== "Cancelled" && booking.status !== "Checked Out");
+  const countsByRoom = database.rooms.map((room) => ({
+    roomId: room.id,
+    roomType: room.name,
+    activeBookings: activeBookings.filter((booking) => booking.roomId === room.id).length
+  }));
+  return {
+    totalBookings: database.bookings.length,
+    activeBookings: activeBookings.length,
+    latestBookings: activeBookings.slice(0, 6).map((booking) => ({
+      id: booking.id,
+      roomType: booking.roomType,
+      roomNumber: booking.roomNumber,
+      checkIn: booking.checkIn,
+      checkOut: booking.checkOut,
+      guests: `${booking.adults} adults, ${booking.children} children`,
+      status: booking.status,
+      paymentStatus: booking.paymentStatus,
+      total: booking.total,
+      customerName: booking.customer?.fullName
+    })),
+    countsByRoom
+  };
+}
+
+function buildReservationSummary() {
+  const activeReservations = database.reservations.filter((reservation) => reservation.status !== "Cancelled" && reservation.status !== "Completed");
+  return {
+    tableInventory: getTableInventory(database),
+    totalReservations: database.reservations.length,
+    activeReservations: activeReservations.length,
+    latestReservations: activeReservations.slice(0, 6).map((reservation) => ({
+      id: reservation.id,
+      table: reservation.table,
+      date: reservation.date,
+      time: reservation.time,
+      guests: reservation.guests,
+      occasion: reservation.occasion,
+      status: reservation.status,
+      customerName: reservation.customer?.name
+    }))
+  };
 }
 
 async function callGemini(message, history, apiResults) {
@@ -778,6 +837,51 @@ Rules:
 
 function buildGroundedFallback(message, apiResults) {
   const value = message.toLowerCase();
+  const wantsHindi = /(hindi|hinglish|bhai|kya|dikhao|batao|chahiye|kamra|khana|shaadi|kal|aaj|kitne|ketne|booking|reserve)/i.test(value);
+  const roomInventory = apiResults.getRoomInventory;
+  const asksRooms = /(room|rooms|kamra|available|availability|price|rate|capacity|kitne|ketne|count|inventory)/i.test(value);
+  const asksTables = /(table|reserve|reserved|reservation|dining|seat)/i.test(value);
+  if (roomInventory && (apiResults.getTableInventory || apiResults.getReservationSummary) && asksRooms && asksTables) {
+    const tableInventory = apiResults.getTableInventory || apiResults.getReservationSummary?.tableInventory;
+    const totalRooms = roomInventory.reduce((sum, room) => sum + room.totalRooms, 0);
+    const availableRooms = roomInventory.reduce((sum, room) => sum + room.availableRooms, 0);
+    const window = roomInventory[0]?.availabilityWindow;
+    const windowText = window ? `${window.checkIn} to ${window.checkOut}` : "the selected dates";
+    return wantsHindi
+      ? `Rooms: total ${totalRooms}, ${windowText} ke liye ${availableRooms} available. Tables: total ${tableInventory.totalTables}, available ${tableInventory.availableTables.join(", ") || "none"}, reserved/booked ${tableInventory.occupiedTables.join(", ") || "none"}. Booking/reservation ke liye date, time, guests aur contact detail batayein.`
+      : `Rooms: ${availableRooms}/${totalRooms} available for ${windowText}. Tables: ${tableInventory.availableTables.join(", ") || "none"} available out of ${tableInventory.totalTables}; reserved/booked: ${tableInventory.occupiedTables.join(", ") || "none"}. Please share date, time, guests, and contact details to book.`;
+  }
+
+  if (roomInventory && /(room|rooms|kamra|available|availability|price|rate|capacity|kitne|ketne|count|inventory)/i.test(value)) {
+    const totalRooms = roomInventory.reduce((sum, room) => sum + room.totalRooms, 0);
+    const availableRooms = roomInventory.reduce((sum, room) => sum + room.availableRooms, 0);
+    const window = roomInventory[0]?.availabilityWindow;
+    const windowText = window ? `${window.checkIn} to ${window.checkOut}` : "the selected dates";
+    const roomLines = roomInventory.map((room) => `${room.name}: ${room.availableRooms}/${room.totalRooms} rooms, ${formatINR(room.price)}, capacity ${room.capacity}`).join("; ");
+    return wantsHindi
+      ? `Hotel me total ${totalRooms} rooms hain. ${windowText} ke liye ${availableRooms} rooms available hain. ${roomLines}. Booking ke liye check-in, check-out aur guests batayein.`
+      : `We have ${totalRooms} total rooms, with ${availableRooms} available for ${windowText}. ${roomLines}. Please share check-in, check-out, and guest count to book.`;
+  }
+
+  if (apiResults.getBookingSummary && /(booking|booked|check.?in|check.?out|client|clicent|customer|guest|payment)/i.test(value)) {
+    const summary = apiResults.getBookingSummary;
+    const latest = summary.latestBookings.map((booking) => `${booking.id}: ${booking.roomType} ${booking.roomNumber}, ${booking.checkIn} to ${booking.checkOut}, ${booking.status}, ${formatINR(booking.total)}`).join("; ");
+    return wantsHindi
+      ? `Abhi ${summary.activeBookings} active room bookings hain. Latest: ${latest || "no active bookings"}.`
+      : `There are ${summary.activeBookings} active room bookings. Latest: ${latest || "no active bookings"}.`;
+  }
+
+  if ((apiResults.getTableInventory || apiResults.getReservationSummary) && /(table|reserve|reserved|reservation|dining|seat)/i.test(value)) {
+    const tableInventory = apiResults.getTableInventory || apiResults.getReservationSummary?.tableInventory;
+    const summary = apiResults.getReservationSummary;
+    const reservationLine = summary?.latestReservations?.length
+      ? ` Latest reservations: ${summary.latestReservations.map((reservation) => `${reservation.table} on ${reservation.date} at ${reservation.time} for ${reservation.guests}`).join("; ")}.`
+      : "";
+    return wantsHindi
+      ? `Restaurant me total ${tableInventory.totalTables} tables hain. Available: ${tableInventory.availableTables.join(", ") || "none"}, reserved/booked: ${tableInventory.occupiedTables.join(", ") || "none"}.${reservationLine} Table reserve karne ke liye date, time, name aur phone batayein.`
+      : `The restaurant has ${tableInventory.totalTables} tables. Available: ${tableInventory.availableTables.join(", ") || "none"}; reserved/booked: ${tableInventory.occupiedTables.join(", ") || "none"}.${reservationLine} Please share date, time, name, and phone to reserve.`;
+  }
+
   const menu = apiResults.getRestaurantMenu;
   if (menu) {
     const categoryMatches = [["chinese", "Chinese Cuisine"], ["indian", "Indian Cuisine"], ["italian", "Italian Cuisine"], ["breakfast", "Breakfast"], ["dessert", "Desserts"], ["beverage", "Beverages"], ["dinner", "Dinner"]];
@@ -785,11 +889,11 @@ function buildGroundedFallback(message, apiResults) {
     const matches = category ? menu.filter((item) => item.category === category) : menu.filter((item) => item.tags?.some((tag) => /chef special|popular|favorite/i.test(tag)));
     if (matches.length) {
       const items = matches.slice(0, 4).map((item) => `${item.name} ${formatINR(item.price)} (${item.rating}/5)`).join("; ");
-      return /(hindi|hinglish|bhai|kya|dikhao|batao|chahiye|khana)/i.test(value) ? `${category || "Chef picks"} me best options: ${items}.` : `${category || "Chef picks"}: ${items}.`;
+      return wantsHindi ? `${category || "Chef picks"} me best options: ${items}.` : `${category || "Chef picks"}: ${items}.`;
     }
   }
 
-  if (/(hindi|hinglish|bhai|kya|dikhao|batao|chahiye|kamra|khana|shaadi|kal|aaj)/i.test(value)) {
+  if (wantsHindi) {
     if (apiResults.getAvailableRooms) return `Available rooms: ${apiResults.getAvailableRooms.map((room) => `${room.name} ${formatINR(room.price)}, capacity ${room.capacity}`).join("; ")}. Booking ke liye date, guests aur preferred room batayein.`;
     if (menu) return `Menu me chef picks: ${menu.slice(0, 4).map((item) => `${item.name} ${formatINR(item.price)}`).join("; ")}.`;
   }

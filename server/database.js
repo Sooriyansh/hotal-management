@@ -75,6 +75,26 @@ export function getAvailableRoomNumbers(database, roomId, checkIn, checkOut) {
   return (roomNumbers[roomId] || []).filter((roomNumber) => !bookedNumbers.has(roomNumber));
 }
 
+export function getRoomInventory(database, checkIn = "", checkOut = "") {
+  const availabilityStart = checkIn || new Date().toISOString().slice(0, 10);
+  const availabilityEnd = checkOut || new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+  return database.rooms.map((room) => {
+    const numbers = roomNumbers[room.id] || [];
+    const availableNumbers = getAvailableRoomNumbers(database, room.id, availabilityStart, availabilityEnd);
+    return {
+      id: room.id,
+      name: room.name,
+      totalRooms: numbers.length,
+      availableRooms: availableNumbers.length,
+      availableNumbers,
+      availabilityWindow: { checkIn: availabilityStart, checkOut: availabilityEnd },
+      price: room.price,
+      capacity: room.capacity,
+      status: room.availability
+    };
+  });
+}
+
 export function getAvailableTable(database, date, time) {
   const occupied = new Set(
     database.reservations
@@ -82,6 +102,32 @@ export function getAvailableTable(database, date, time) {
       .map((reservation) => reservation.table)
   );
   return tableNumbers.find((table) => !occupied.has(table)) || null;
+}
+
+export function getTableInventory(database, date = "", time = "") {
+  const activeReservations = database.reservations.filter((reservation) => {
+    const active = reservation.status !== "Cancelled" && reservation.status !== "Completed";
+    const sameDate = !date || reservation.date === date;
+    const sameTime = !time || reservation.time === time;
+    return active && sameDate && sameTime;
+  });
+
+  if (!date && !time && Array.isArray(database.reservationsCatalog)) {
+    return {
+      totalTables: tableNumbers.length,
+      availableTables: database.reservationsCatalog.filter((table) => table.status === "available").map((table) => table.table),
+      occupiedTables: database.reservationsCatalog.filter((table) => table.status !== "available").map((table) => table.table),
+      reservations: activeReservations
+    };
+  }
+
+  const occupied = new Set(activeReservations.map((reservation) => reservation.table));
+  return {
+    totalTables: tableNumbers.length,
+    availableTables: tableNumbers.filter((table) => !occupied.has(table)),
+    occupiedTables: tableNumbers.filter((table) => occupied.has(table)),
+    reservations: activeReservations
+  };
 }
 
 export function calculateBookingTotals(roomPrice, nights) {
