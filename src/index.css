@@ -25,7 +25,6 @@ body {
     radial-gradient(circle at 85% 12%, rgba(63, 125, 114, 0.18), transparent 30rem),
     #08090d;
   color: #faf7ef;
-  cursor: none;
   font-family: Poppins, ui-sans-serif, system-ui, sans-serif;
 }
 
@@ -39,7 +38,13 @@ button,
 input,
 select,
 textarea {
-  cursor: none;
+  cursor: pointer;
+}
+
+input,
+select,
+textarea {
+  cursor: auto;
 }
 
 ::selection {
@@ -94,50 +99,6 @@ textarea {
 .section-shell {
   width: min(1180px, calc(100% - 32px));
   margin-inline: auto;
-}
-
-.premium-cursor,
-.premium-cursor-ring {
-  pointer-events: none;
-  position: fixed;
-  left: 0;
-  top: 0;
-  z-index: 9999;
-  border-radius: 999px;
-  transform: translate3d(-50%, -50%, 0);
-}
-
-.premium-cursor {
-  height: 9px;
-  width: 9px;
-  background: #ffd700;
-  box-shadow: 0 0 22px rgba(255, 215, 0, 0.9);
-}
-
-.premium-cursor-ring {
-  height: 38px;
-  width: 38px;
-  border: 1px solid rgba(255, 215, 0, 0.72);
-  background: rgba(212, 175, 55, 0.08);
-  transition: height 0.18s ease, width 0.18s ease, border-color 0.18s ease;
-}
-
-.premium-cursor-ring.is-hovering {
-  height: 58px;
-  width: 58px;
-  border-color: rgba(255, 255, 255, 0.9);
-}
-
-.click-ripple {
-  pointer-events: none;
-  position: fixed;
-  z-index: 9998;
-  height: 14px;
-  width: 14px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 215, 0, 0.9);
-  transform: translate(-50%, -50%);
-  animation: ripple-out 0.55s ease-out forwards;
 }
 
 .magnetic-button {
@@ -226,29 +187,6 @@ textarea {
 @media (min-width: 1024px) {
   .masonry {
     column-count: 3;
-  }
-}
-
-@media (max-width: 768px) {
-  body,
-  a,
-  button,
-  input,
-  select,
-  textarea {
-    cursor: auto;
-  }
-
-  .premium-cursor,
-  .premium-cursor-ring {
-    display: none;
-  }
-}
-
-@keyframes ripple-out {
-  to {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(4);
   }
 }
 

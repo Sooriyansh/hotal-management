@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, NavLink, Route, Routes } from "react-router-dom";
+import { Link, NavLink, Navigate, Route, Routes, useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { useDispatch, useSelector } from "react-redux";
+import { Toaster, toast } from "sonner";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Pagination, Autoplay } from "swiper/modules";
 import { Canvas } from "@react-three/fiber";
@@ -31,17 +32,20 @@ import {
   CalendarCheck,
   Camera,
   ChefHat,
+  CheckCircle2,
   CircleDollarSign,
   CloudSun,
   Copy,
   Clock,
   CreditCard,
   Crown,
+  Download,
   Dumbbell,
   Gem,
   Globe2,
   Heart,
   Hotel,
+  IndianRupee,
   KeyRound,
   LayoutDashboard,
   Mail,
@@ -54,6 +58,7 @@ import {
   Phone,
   PlayCircle,
   Plus,
+  QrCode,
   RefreshCw,
   Search,
   ShieldCheck,
@@ -74,13 +79,51 @@ import {
 import {
   addToCart,
   applyCoupon,
+  cancelBooking,
   clearCart,
+  createBooking,
+  createOrder,
+  createPayment,
+  createReservation,
   removeFromCart,
   setReservation,
   setRoomSearch,
-  updateQty
+  updateBookingStatus,
+  updateOrderStatus,
+  updatePaymentStatus,
+  updateReservationStatus,
+  updateQty,
+  closeAuthModal,
+  closeBookingModal,
+  closeReservationModal,
+  hydrateStore,
+  markNotificationRead,
+  openAuthModal,
+  openBookingModal,
+  openReservationModal,
+  setAuth,
+  setActiveDialog,
+  setNotifications,
+  setReviews,
+  setWishlist
 } from "./store.js";
 import { askConcierge, getAiInsights } from "./services/conciergeApi.js";
+import {
+  createBooking as apiCreateBooking,
+  createOrder as apiCreateOrder,
+  createPayment as apiCreatePayment,
+  createReservation as apiCreateReservation,
+  createReview as apiCreateReview,
+  createNotification as apiCreateNotification,
+  getBootstrap,
+  getProfile,
+  login as apiLogin,
+  markNotificationsRead as apiMarkNotificationsRead,
+  register as apiRegister,
+  resetPassword as apiResetPassword,
+  forgotPassword as apiForgotPassword,
+  toggleWishlist as apiToggleWishlist
+} from "./services/appApi.js";
 
 const heroVideo = "https://videos.pexels.com/video-files/3121327/3121327-uhd_2560_1440_24fps.mp4";
 
@@ -106,22 +149,22 @@ const roomImages = [
 ];
 
 const rooms = [
-  { id: "deluxe", name: "Deluxe Room", price: 220, capacity: 2, rating: 4.8, image: roomImages[0], amenities: ["King bed", "City view", "Rain shower", "Smart concierge"] },
-  { id: "executive", name: "Executive Room", price: 310, capacity: 2, rating: 4.9, image: roomImages[1], amenities: ["Workspace", "Club lounge", "Nespresso", "Airport transfer"] },
-  { id: "family", name: "Family Room", price: 390, capacity: 4, rating: 4.8, image: roomImages[2], amenities: ["Two bedrooms", "Kids menu", "Balcony", "Laundry care"] },
-  { id: "suite", name: "Luxury Suite", price: 540, capacity: 3, rating: 5, image: roomImages[3], amenities: ["Private terrace", "Butler service", "Jacuzzi", "Dining salon"] },
-  { id: "presidential", name: "Presidential Suite", price: 1250, capacity: 6, rating: 5, image: roomImages[4], amenities: ["Panoramic floor", "Chef on call", "Boardroom", "Spa bath"] }
+  { id: "deluxe", name: "Deluxe Room", price: 8500, capacity: 2, rating: 4.8, image: roomImages[0], amenities: ["King bed", "City view", "Rain shower", "Smart concierge"] },
+  { id: "executive", name: "Executive Room", price: 12000, capacity: 2, rating: 4.9, image: roomImages[1], amenities: ["Workspace", "Club lounge", "Nespresso", "Airport transfer"] },
+  { id: "family", name: "Family Room", price: 15000, capacity: 4, rating: 4.8, image: roomImages[2], amenities: ["Two bedrooms", "Kids menu", "Balcony", "Laundry care"] },
+  { id: "suite", name: "Luxury Suite", price: 25000, capacity: 3, rating: 5, image: roomImages[3], amenities: ["Private terrace", "Butler service", "Jacuzzi", "Dining salon"] },
+  { id: "presidential", name: "Presidential Suite", price: 50000, capacity: 6, rating: 5, image: roomImages[4], amenities: ["Panoramic floor", "Chef on call", "Boardroom", "Spa bath"] }
 ];
 
 const food = [
-  { id: "f1", name: "Truffle Saffron Risotto", category: "Italian Cuisine", price: 32, rating: 4.9, image: "https://images.unsplash.com/photo-1476124369491-e7addf5db371?auto=format&fit=crop&w=900&q=80", tags: ["Chef Special", "Vegetarian"] },
-  { id: "f2", name: "Royal Butter Chicken", category: "Indian Cuisine", price: 28, rating: 4.9, image: "https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?auto=format&fit=crop&w=900&q=80", tags: ["Popular", "Dinner"] },
-  { id: "f3", name: "Wagyu Signature Burger", category: "Fast Food", price: 26, rating: 4.8, image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=900&q=80", tags: ["Lunch", "Favorite"] },
-  { id: "f4", name: "Dim Sum Imperial Basket", category: "Chinese Cuisine", price: 24, rating: 4.7, image: "https://images.unsplash.com/photo-1563245372-f21724e3856d?auto=format&fit=crop&w=900&q=80", tags: ["Shareable", "Lunch"] },
-  { id: "f5", name: "Gold Leaf Chocolate Torte", category: "Desserts", price: 18, rating: 4.9, image: "https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=900&q=80", tags: ["Dessert", "Signature"] },
-  { id: "f6", name: "Sunrise Wellness Bowl", category: "Breakfast", price: 16, rating: 4.7, image: "https://images.unsplash.com/photo-1511690656952-34342bb7c2f2?auto=format&fit=crop&w=900&q=80", tags: ["Breakfast", "Healthy"] },
-  { id: "f7", name: "Sparkling Rose Mocktail", category: "Beverages", price: 12, rating: 4.8, image: "https://images.unsplash.com/photo-1544145945-f90425340c7e?auto=format&fit=crop&w=900&q=80", tags: ["Beverage", "Refreshing"] },
-  { id: "f8", name: "Tuscan Herb Sea Bass", category: "Dinner", price: 38, rating: 5, image: "https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?auto=format&fit=crop&w=900&q=80", tags: ["Dinner", "Chef Special"] }
+  { id: "f1", name: "Paneer Tikka", category: "Indian Cuisine", price: 349, rating: 4.9, image: "https://images.unsplash.com/photo-1567188040759-fb8a883dc6d8?auto=format&fit=crop&w=900&q=80", tags: ["Chef Special", "Vegetarian"] },
+  { id: "f2", name: "Veg Biryani", category: "Indian Cuisine", price: 299, rating: 4.9, image: "https://images.unsplash.com/photo-1633945274405-b6c8069047b0?auto=format&fit=crop&w=900&q=80", tags: ["Popular", "Dinner"] },
+  { id: "f3", name: "Hakka Noodles", category: "Chinese Cuisine", price: 279, rating: 4.8, image: "https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=900&q=80", tags: ["Lunch", "Favorite"] },
+  { id: "f4", name: "Dim Sum Imperial Basket", category: "Chinese Cuisine", price: 449, rating: 4.7, image: "https://images.unsplash.com/photo-1563245372-f21724e3856d?auto=format&fit=crop&w=900&q=80", tags: ["Shareable", "Lunch"] },
+  { id: "f5", name: "Gold Leaf Chocolate Torte", category: "Desserts", price: 399, rating: 4.9, image: "https://images.unsplash.com/photo-1606313564200-e75d5e30476c?auto=format&fit=crop&w=900&q=80", tags: ["Dessert", "Signature"] },
+  { id: "f6", name: "Sunrise Wellness Bowl", category: "Breakfast", price: 249, rating: 4.7, image: "https://images.unsplash.com/photo-1511690656952-34342bb7c2f2?auto=format&fit=crop&w=900&q=80", tags: ["Breakfast", "Healthy"] },
+  { id: "f7", name: "Sparkling Rose Mocktail", category: "Beverages", price: 199, rating: 4.8, image: "https://images.unsplash.com/photo-1544145945-f90425340c7e?auto=format&fit=crop&w=900&q=80", tags: ["Beverage", "Refreshing"] },
+  { id: "f8", name: "Tandoori Platter", category: "Dinner", price: 699, rating: 5, image: "https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=900&q=80", tags: ["Dinner", "Chef Special"] }
 ];
 
 const gallery = [
@@ -188,20 +231,173 @@ const restaurantTables = [
 ];
 
 const nutritionDetails = {
-  "Truffle Saffron Risotto": ["510 kcal", "Contains dairy", "Wild mushrooms, saffron, parmesan"],
-  "Royal Butter Chicken": ["620 kcal", "Contains dairy", "Tandoor chicken, tomato cream, fenugreek"],
-  "Wagyu Signature Burger": ["780 kcal", "Contains gluten", "Wagyu patty, aged cheddar, brioche"],
+  "Paneer Tikka": ["410 kcal", "Contains dairy", "Paneer, tandoori spices, mint chutney"],
+  "Veg Biryani": ["520 kcal", "Contains dairy", "Basmati rice, vegetables, saffron"],
+  "Hakka Noodles": ["480 kcal", "Contains soy", "Noodles, vegetables, wok sauce"],
   "Dim Sum Imperial Basket": ["420 kcal", "Contains soy", "Prawn, chive, sesame dipping sauce"],
   "Gold Leaf Chocolate Torte": ["460 kcal", "Contains nuts", "Dark chocolate, almond praline, gold leaf"],
   "Sunrise Wellness Bowl": ["330 kcal", "Nut optional", "Greek yogurt, berries, granola"],
   "Sparkling Rose Mocktail": ["120 kcal", "No common allergens", "Rose, citrus, sparkling water"],
-  "Tuscan Herb Sea Bass": ["540 kcal", "Contains fish", "Sea bass, herbs, lemon butter"]
+  "Tandoori Platter": ["640 kcal", "Contains dairy", "Tandoori kebabs, chutney, salad"]
 };
 
+const roomNumbers = {
+  deluxe: ["201", "202", "203"],
+  executive: ["301", "302"],
+  family: ["401", "402"],
+  suite: ["501", "502"],
+  presidential: ["701"]
+};
+
+const bookingStatuses = ["Pending", "Confirmed", "Checked In", "Checked Out", "Cancelled"];
+const foodStatuses = ["Order Received", "Accepted", "Preparing", "Cooking", "Ready", "Out For Delivery", "Delivered"];
+const paymentMethods = ["UPI", "Credit Card", "Debit Card", "Net Banking"];
+const foodPaymentMethods = ["UPI", "Card", "Cash"];
+const deliveryTypes = ["Room Delivery", "Restaurant Pickup", "Table Service"];
+const currencyLabel = "₹ INR";
+
+function formatINR(value) {
+  return `₹${Math.round(Number(value) || 0).toLocaleString("en-IN")} INR`;
+}
+
+function nightsBetween(checkIn, checkOut) {
+  const start = new Date(checkIn);
+  const end = new Date(checkOut);
+  const diff = Math.ceil((end - start) / 86400000);
+  return Number.isFinite(diff) && diff > 0 ? diff : 1;
+}
+
+function overlaps(aStart, aEnd, bStart, bEnd) {
+  return new Date(aStart) < new Date(bEnd) && new Date(bStart) < new Date(aEnd);
+}
+
+function generateId(prefix) {
+  return `${prefix}-GL-${new Date().toISOString().slice(2, 10).replaceAll("-", "")}-${Math.floor(100 + Math.random() * 900)}`;
+}
+
+function parseCount(value) {
+  return Number.parseInt(String(value || "0"), 10) || 0;
+}
+
+function isRoomBooked(booking, roomId, checkIn, checkOut) {
+  if (!checkIn || !checkOut || booking.roomId !== roomId || booking.status === "Cancelled" || booking.status === "Checked Out") return false;
+  return overlaps(checkIn, checkOut, booking.checkIn, booking.checkOut);
+}
+
+function getAvailableRoomNumbers(bookings, roomId, checkIn, checkOut) {
+  const bookedNumbers = new Set(
+    bookings
+      .filter((booking) => isRoomBooked(booking, roomId, checkIn, checkOut))
+      .map((booking) => booking.roomNumber)
+  );
+  return (roomNumbers[roomId] || []).filter((roomNumber) => !bookedNumbers.has(roomNumber));
+}
+
+function downloadInvoice(record, type) {
+  const isBooking = type === "Booking";
+  const detailLines = isBooking
+    ? [
+        `Room Type: ${record.roomType}`,
+        `Room Number: ${record.roomNumber}`,
+        `Stay: ${record.checkIn} to ${record.checkOut}`,
+        `Nights: ${record.nights}`,
+        `Price Per Night: ${formatINR(record.pricePerNight || 0)}`
+      ]
+    : [
+        `Delivery Type: ${record.deliveryType}`,
+        `Items: ${(record.items || []).map((item) => `${item.qty} x ${item.name} (${formatINR(item.price)})`).join(", ")}`,
+        `Subtotal: ${formatINR(record.subtotal || 0)}`
+      ];
+  const lines = [
+    "Grand Luxury Hotel & Restaurant",
+    "Professional GST Invoice",
+    "Hotel Logo: Grand Luxury Crown",
+    `Invoice: ${record.invoice}`,
+    `${type} ID: ${record.id}`,
+    `Customer: ${record.customer?.fullName || record.customer?.name || "Guest"}`,
+    `Mobile: ${record.customer?.mobile || ""}`,
+    `Email: ${record.customer?.email || ""}`,
+    `Address: ${record.customer?.address || ""}`,
+    ...detailLines,
+    `Discount: ${formatINR(record.discount || 0)}`,
+    `GST: ${formatINR(record.taxes || 0)}`,
+    `Total Amount: ${formatINR(record.total || 0)}`,
+    `Payment: ${record.paymentMethod} - ${record.paymentStatus}`,
+    `Reward Points Earned: ${record.rewardPoints || Math.floor((record.total || 0) / 100)}`,
+    "Thank you for choosing Grand Luxury."
+  ];
+  const blob = new Blob([lines.join("\n")], { type: "application/pdf" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${record.invoice}.pdf`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 function App() {
+  const dispatch = useDispatch();
+  const cart = useSelector((state) => state.cart);
+  const booking = useSelector((state) => state.booking);
+  const orders = useSelector((state) => state.orders);
+  const payments = useSelector((state) => state.payments);
+  const reservations = useSelector((state) => state.reservations);
+  const auth = useSelector((state) => state.auth);
+  const wishlist = useSelector((state) => state.wishlist);
+  const reviews = useSelector((state) => state.reviews);
+  const notifications = useSelector((state) => state.notifications);
+
+  useEffect(() => {
+    getBootstrap()
+      .then((data) => {
+        dispatch(
+          hydrateStore({
+            booking: {
+              roomSearch: booking.roomSearch,
+              reservation: booking.reservation,
+              bookings: data.bookings || []
+            },
+            orders: { orders: data.orders || [] },
+            payments: { payments: data.payments || [] },
+            reservations: { reservations: data.reservations || [] },
+            reviews: { items: data.reviews || [] },
+            wishlist: { items: data.wishlist || [] },
+            notifications: { items: data.notifications || [] },
+            auth: auth
+          })
+        );
+        const token = localStorage.getItem("grandLuxuryAuthToken");
+        if (token) {
+          getProfile()
+            .then((result) => dispatch(setAuth({ user: result.user, token })))
+            .catch(() => {
+              localStorage.removeItem("grandLuxuryAuthToken");
+              dispatch(setAuth({ user: null, token: "" }));
+            });
+        }
+      })
+      .catch(() => {
+        toast.error("Network error while loading hotel data");
+      });
+  }, [dispatch]);
+
+  useEffect(() => {
+    localStorage.setItem("grandLuxuryCart", JSON.stringify(cart));
+    localStorage.setItem("grandLuxuryBooking", JSON.stringify(booking));
+    localStorage.setItem("grandLuxuryOrders", JSON.stringify(orders));
+    localStorage.setItem("grandLuxuryPayments", JSON.stringify(payments));
+    localStorage.setItem("grandLuxuryReservations", JSON.stringify(reservations));
+    localStorage.setItem("grandLuxuryAuth", JSON.stringify(auth));
+    localStorage.setItem("grandLuxuryWishlist", JSON.stringify(wishlist));
+    localStorage.setItem("grandLuxuryReviews", JSON.stringify(reviews));
+    localStorage.setItem("grandLuxuryNotifications", JSON.stringify(notifications));
+    if (auth.token) localStorage.setItem("grandLuxuryAuthToken", auth.token);
+    else localStorage.removeItem("grandLuxuryAuthToken");
+  }, [auth, booking, cart, notifications, orders, payments, reservations, reviews, wishlist]);
+
   return (
     <div className="min-h-screen overflow-x-hidden">
-      <LuxuryCursor />
+      <Toaster richColors position="top-right" expand />
       <Navbar />
       <main>
         <Routes>
@@ -215,11 +411,17 @@ function App() {
           <Route path="/spa" element={<Spa />} />
           <Route path="/gallery" element={<Gallery />} />
           <Route path="/contact" element={<Contact />} />
-          <Route path="/dashboard" element={<CustomerDashboard />} />
-          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/auth" element={<AuthPage />} />
+          <Route path="/booking/:id" element={<BookingConfirmationPage />} />
+          <Route path="/order/:id" element={<OrderConfirmationPage />} />
+          <Route path="/dashboard" element={<RequireAuth><CustomerDashboard /></RequireAuth>} />
+          <Route path="/admin" element={<RequireAuth><AdminDashboard /></RequireAuth>} />
           <Route path="*" element={<Home />} />
         </Routes>
       </main>
+      <BookingModal />
+      <ReservationModal />
+      <AuthModal />
       <Chatbot />
       <MobileBottomNav />
       <Footer />
@@ -227,36 +429,9 @@ function App() {
   );
 }
 
-function LuxuryCursor() {
-  const [position, setPosition] = useState({ x: -100, y: -100 });
-  const [hovering, setHovering] = useState(false);
-  const [ripples, setRipples] = useState([]);
-
-  useEffect(() => {
-    const move = (event) => setPosition({ x: event.clientX, y: event.clientY });
-    const over = (event) => setHovering(Boolean(event.target.closest("a, button, input, select, textarea")));
-    const click = (event) => {
-      const id = `${Date.now()}-${event.clientX}`;
-      setRipples((current) => [...current.slice(-3), { id, x: event.clientX, y: event.clientY }]);
-      window.setTimeout(() => setRipples((current) => current.filter((item) => item.id !== id)), 580);
-    };
-    window.addEventListener("mousemove", move);
-    window.addEventListener("mouseover", over);
-    window.addEventListener("click", click);
-    return () => {
-      window.removeEventListener("mousemove", move);
-      window.removeEventListener("mouseover", over);
-      window.removeEventListener("click", click);
-    };
-  }, []);
-
-  return (
-    <>
-      <div className="premium-cursor" style={{ transform: `translate3d(${position.x}px, ${position.y}px, 0) translate(-50%, -50%)` }} />
-      <div className={`premium-cursor-ring ${hovering ? "is-hovering" : ""}`} style={{ transform: `translate3d(${position.x}px, ${position.y}px, 0) translate(-50%, -50%)` }} />
-      {ripples.map((ripple) => <span key={ripple.id} className="click-ripple" style={{ left: ripple.x, top: ripple.y }} />)}
-    </>
-  );
+function RequireAuth({ children }) {
+  const token = useSelector((state) => state.auth.token);
+  return token ? children : <Navigate to="/auth" replace />;
 }
 
 function MobileBottomNav() {
@@ -280,7 +455,10 @@ function MobileBottomNav() {
 
 function Navbar() {
   const [open, setOpen] = useState(false);
+  const dispatch = useDispatch();
   const count = useSelector((state) => state.cart.items.reduce((sum, item) => sum + item.qty, 0));
+  const unread = useSelector((state) => state.notifications.items.filter((item) => !item.read).length);
+  const user = useSelector((state) => state.auth.user);
   return (
     <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-midnight/78 backdrop-blur-xl">
       <nav className="section-shell flex h-20 items-center justify-between gap-4">
@@ -303,7 +481,10 @@ function Navbar() {
         <div className="hidden items-center gap-2 xl:flex">
           <IconLink to="/food-order" label="Cart" count={count} icon={<ShoppingBag />} />
           <Link to="/dashboard" className="rounded-md border border-white/10 px-4 py-2 text-sm font-semibold hover:border-gold/60">Dashboard</Link>
-          <Link to="/admin" className="rounded-md border border-gold/70 bg-gold px-4 py-2 text-sm font-bold text-midnight">Book Now</Link>
+          <button onClick={() => dispatch(openBookingModal())} className="rounded-md border border-gold/70 bg-gold px-4 py-2 text-sm font-bold text-midnight">Book Now</button>
+          <button onClick={() => dispatch(openReservationModal())} className="rounded-md border border-white/10 px-4 py-2 text-sm font-semibold hover:border-gold/60">Reserve Table</button>
+          <button onClick={() => dispatch(openAuthModal(user ? "login" : "login"))} className="rounded-md border border-white/10 px-4 py-2 text-sm font-semibold hover:border-gold/60">{user ? user.fullName : "Login"}</button>
+          <Link to="/dashboard" className="rounded-md border border-white/10 px-4 py-2 text-sm font-semibold hover:border-gold/60">Alerts {unread ? `(${unread})` : ""}</Link>
         </div>
         <button className="grid h-11 w-11 place-items-center rounded-md border border-white/10 xl:hidden" onClick={() => setOpen((value) => !value)} aria-label="Toggle navigation">
           {open ? <X /> : <MenuIcon />}
@@ -317,7 +498,7 @@ function Navbar() {
             ))}
             <div className="grid grid-cols-2 gap-2 pt-2">
               <Link to="/dashboard" className="rounded-md border border-white/10 px-3 py-2 text-center text-sm">Dashboard</Link>
-              <Link to="/admin" className="rounded-md bg-gold px-3 py-2 text-center text-sm font-bold text-midnight">Book Now</Link>
+              <button onClick={() => dispatch(openBookingModal())} className="rounded-md bg-gold px-3 py-2 text-center text-sm font-bold text-midnight">Book Now</button>
             </div>
           </div>
         </div>
@@ -409,7 +590,7 @@ function Home() {
 
 function BookingPanel() {
   const dispatch = useDispatch();
-  const roomForm = useForm({ defaultValues: { checkIn: "", checkOut: "", guests: "2", room: "Luxury Suite" } });
+  const roomForm = useForm({ defaultValues: { checkIn: "", checkOut: "", adults: "2", children: "0", room: "Luxury Suite" } });
   const tableForm = useForm({ defaultValues: { date: "", time: "20:00", guests: "2", occasion: "Dinner" } });
   return (
     <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }} className="glass rounded-lg p-5 shadow-2xl">
@@ -417,6 +598,7 @@ function BookingPanel() {
         <div>
           <p className="text-xs uppercase tracking-[0.24em] text-gold">Instant concierge</p>
           <h2 className="font-display text-3xl font-semibold">Plan Your Visit</h2>
+          <p className="mt-1 text-xs text-pearl/55">{currencyLabel} pricing across hotel and restaurant.</p>
         </div>
         <CalendarCheck className="h-8 w-8 text-gold" />
       </div>
@@ -424,13 +606,14 @@ function BookingPanel() {
         <div className="grid gap-3 sm:grid-cols-2">
           <input className="luxury-input" type="date" {...roomForm.register("checkIn")} />
           <input className="luxury-input" type="date" {...roomForm.register("checkOut")} />
-          <select className="luxury-input" {...roomForm.register("guests")}><option>1</option><option>2</option><option>3</option><option>4</option><option>6</option></select>
+          <select className="luxury-input" {...roomForm.register("adults")}><option>1 adult</option><option>2 adults</option><option>3 adults</option><option>4 adults</option><option>6 adults</option></select>
+          <select className="luxury-input" {...roomForm.register("children")}><option>0 children</option><option>1 child</option><option>2 children</option><option>3 children</option></select>
           <select className="luxury-input" {...roomForm.register("room")}>{rooms.map((room) => <option key={room.id}>{room.name}</option>)}</select>
         </div>
         <button className="rounded-md bg-gold py-3 font-bold text-midnight">Search Rooms</button>
       </form>
       <div className="my-5 h-px bg-gold-line" />
-      <form className="grid gap-3" onSubmit={tableForm.handleSubmit((data) => dispatch(setReservation(data)))}>
+      <form className="grid gap-3" onSubmit={tableForm.handleSubmit(() => dispatch(openReservationModal()))}>
         <div className="grid gap-3 sm:grid-cols-2">
           <input className="luxury-input" type="date" {...tableForm.register("date")} />
           <input className="luxury-input" type="time" {...tableForm.register("time")} />
@@ -560,6 +743,7 @@ function FeaturedRooms() {
 }
 
 function RoomCard({ room }) {
+  const dispatch = useDispatch();
   return (
     <motion.article whileHover={{ y: -8 }} className="glass tilt-card overflow-hidden rounded-lg">
       <div className="relative h-64 overflow-hidden">
@@ -568,21 +752,21 @@ function RoomCard({ room }) {
           <span className="rounded-full bg-midnight/82 px-3 py-1 text-xs font-bold text-gold"><span className="availability-dot mr-2" />Live Available</span>
           <span className="rounded-full bg-midnight/82 px-3 py-1 text-xs font-bold text-pearl">360 Tour</span>
         </div>
-        <button className="magnetic-button absolute bottom-3 right-3 inline-flex items-center gap-2 rounded-md bg-gold px-3 py-2 text-xs font-bold text-midnight"><Video className="h-4 w-4" /> Preview</button>
+        <button onClick={() => dispatch(openBookingModal(room.id))} className="magnetic-button absolute bottom-3 right-3 inline-flex items-center gap-2 rounded-md bg-gold px-3 py-2 text-xs font-bold text-midnight"><Video className="h-4 w-4" /> Preview</button>
       </div>
       <div className="p-5">
         <div className="flex items-start justify-between gap-3">
           <div>
             <h3 className="font-display text-3xl font-semibold">{room.name}</h3>
-            <p className="mt-1 text-sm text-pearl/62">Available tonight • Sleeps {room.capacity}</p>
+            <p className="mt-1 text-sm text-pearl/62">Available tonight - Sleeps {room.capacity}</p>
           </div>
-          <span className="rounded-md bg-gold/15 px-2 py-1 text-sm font-bold text-gold">${room.price}</span>
+          <span className="rounded-md bg-gold/15 px-2 py-1 text-sm font-bold text-gold">{formatINR(room.price)}/Night</span>
         </div>
         <div className="mt-4 flex flex-wrap gap-2">{room.amenities.map((item) => <span key={item} className="rounded-full border border-white/10 px-3 py-1 text-xs text-pearl/70">{item}</span>)}</div>
         <div className="mt-5 rounded-lg border border-gold/20 bg-gold/10 p-3">
           <div className="flex items-center justify-between text-sm">
             <span className="text-pearl/58">Peak season</span>
-            <span className="line-through text-pearl/45">${Math.round(room.price * 1.25)}</span>
+            <span className="line-through text-pearl/45">{formatINR(room.price * 1.25)}</span>
           </div>
           <div className="mt-1 flex items-center justify-between">
             <span className="font-bold text-gold">20% OFF</span>
@@ -592,8 +776,8 @@ function RoomCard({ room }) {
         <div className="mt-5 flex items-center justify-between">
           <span className="flex items-center gap-1 text-sm text-gold"><Star className="h-4 w-4 fill-gold" /> {room.rating}</span>
           <div className="flex gap-2">
-            <button className="rounded-md border border-white/10 px-3 py-2 text-xs font-bold text-pearl/70">Compare</button>
-            <Link to="/rooms" className="magnetic-button rounded-md border border-gold/55 px-4 py-2 text-sm font-bold text-gold">Book</Link>
+            <button onClick={() => dispatch(setActiveDialog({ type: "room-compare", roomId: room.id }))} className="rounded-md border border-white/10 px-3 py-2 text-xs font-bold text-pearl/70">Compare</button>
+            <button onClick={() => dispatch(openBookingModal(room.id))} className="magnetic-button rounded-md border border-gold/55 px-4 py-2 text-sm font-bold text-gold">Book</button>
           </div>
         </div>
       </div>
@@ -630,16 +814,21 @@ function RestaurantShowcase() {
 }
 
 function LiveTableSelection() {
+  const reservations = useSelector((state) => state.reservations.reservations);
   const statusStyles = {
     available: "bg-emerald-500",
     booked: "bg-red-500",
     reserved: "bg-yellow-400"
   };
+  const liveTables = restaurantTables.map(([table, fallbackStatus]) => {
+    const reservation = reservations.find((item) => item.table === table && item.status !== "Cancelled" && item.status !== "Completed");
+    return [table, reservation ? "reserved" : fallbackStatus === "booked" ? "booked" : "available"];
+  });
   return (
     <div className="rounded-lg border border-midnight/10 bg-white p-4 shadow-lg">
       <h3 className="font-display text-2xl font-semibold">Live Table Selection</h3>
       <div className="mt-4 grid grid-cols-3 gap-3">
-        {restaurantTables.map(([table, status]) => (
+        {liveTables.map(([table, status]) => (
           <button key={table} className="rounded-md border border-midnight/10 p-3 text-sm font-bold">
             <span className={`mr-2 inline-block h-3 w-3 rounded-full ${statusStyles[status]}`} />
             {table}
@@ -665,7 +854,19 @@ function ChefRecommendations() {
 
 function FoodCard({ item, light = false }) {
   const dispatch = useDispatch();
+  const wishlistItems = useSelector((state) => state.wishlist.items);
+  const saved = wishlistItems.some((entry) => entry.itemId === item.id);
   const details = nutritionDetails[item.name] || ["Chef curated", "Ask for allergens", "Premium seasonal ingredients"];
+  const toggleSave = async () => {
+    try {
+      const result = await apiToggleWishlist({ type: "food", itemId: item.id, item });
+      const nextItems = result.saved ? [...wishlistItems.filter((entry) => entry.itemId !== item.id), result.item] : wishlistItems.filter((entry) => entry.itemId !== item.id);
+      dispatch(setWishlist({ items: nextItems }));
+      toast.success(result.message || (result.saved ? "Added to wishlist" : "Removed from wishlist"));
+    } catch (error) {
+      toast.error(error.message || "Unable to update wishlist");
+    }
+  };
   return (
     <motion.article whileHover={{ y: -6, rotateY: light ? 0 : -3 }} className={`tilt-card overflow-hidden rounded-lg ${light ? "bg-white shadow-xl" : "glass"}`}>
       <div className="relative h-44 overflow-hidden">
@@ -675,7 +876,7 @@ function FoodCard({ item, light = false }) {
       <div className="p-4">
         <div className="flex items-start justify-between gap-2">
           <h3 className={`font-display text-2xl font-semibold ${light ? "text-midnight" : ""}`}>{item.name}</h3>
-          <button aria-label="Favorite item" className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-gold/30 text-gold"><Heart className="h-4 w-4" /></button>
+          <button aria-label="Favorite item" onClick={toggleSave} className={`grid h-9 w-9 shrink-0 place-items-center rounded-full border ${saved ? "border-gold bg-gold text-midnight" : "border-gold/30 text-gold"}`}><Heart className={`h-4 w-4 ${saved ? "fill-midnight" : ""}`} /></button>
         </div>
         <p className={`mt-1 text-sm ${light ? "text-midnight/60" : "text-pearl/60"}`}>{item.category} • {item.tags.join(" • ")}</p>
         <div className={`mt-3 grid gap-1 text-xs ${light ? "text-midnight/58" : "text-pearl/58"}`}>
@@ -683,8 +884,11 @@ function FoodCard({ item, light = false }) {
           <span>Chef note: plated fresh with premium garnish.</span>
         </div>
         <div className="mt-4 flex items-center justify-between">
-          <span className="font-bold text-gold">${item.price}</span>
-          <button onClick={() => dispatch(addToCart(item))} className="rounded-md bg-gold px-3 py-2 text-sm font-bold text-midnight">Add</button>
+          <span className="font-bold text-gold">{formatINR(item.price)}</span>
+          <button onClick={() => {
+            dispatch(addToCart(item));
+            toast.success("Added To Cart");
+          }} className="rounded-md bg-gold px-3 py-2 text-sm font-bold text-midnight">Add</button>
         </div>
       </div>
     </motion.article>
@@ -758,7 +962,7 @@ function TravelWidgets() {
   const widgets = [
     [CloudSun, "Weather", "29 C, clear evening, ideal rooftop dining"],
     [NavigationIcon, "Nearby Attractions", "Museum District 8 min, Riverside 12 min"],
-    [CircleDollarSign, "Currency", "USD 1 = INR 83.2 demo rate"],
+    [CircleDollarSign, "Currency", "All billing uses ₹ INR across rooms and dining"],
     [Globe2, "Travel Guide", "Airport transfer, city tour, luxury shopping"]
   ];
   return (
@@ -859,14 +1063,146 @@ function Timeline() {
 }
 
 function Rooms() {
-  const [budget, setBudget] = useState(600);
+  const [budget, setBudget] = useState(50000);
   const [capacity, setCapacity] = useState(2);
   const filteredRooms = rooms.filter((room) => room.price <= budget && room.capacity >= capacity);
   return (
-    <PageShell eyebrow="Rooms & suites" title="Availability, elegance, and category control">
+    <PageShell eyebrow="Rooms & suites" title="Real-time room booking workflow">
+      <BookingWorkflow />
       <SmartRoomFinder budget={budget} capacity={capacity} onBudget={setBudget} onCapacity={setCapacity} />
       <div className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-3">{filteredRooms.map((room) => <RoomCard key={room.id} room={room} />)}</div>
     </PageShell>
+  );
+}
+
+function BookingWorkflow() {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const bookings = useSelector((state) => state.booking.bookings);
+  const [booking, setBooking] = useState(null);
+  const { register, handleSubmit, watch, reset } = useForm({
+    defaultValues: {
+      checkIn: "",
+      checkOut: "",
+      adults: "2",
+      children: "0",
+      roomId: "deluxe",
+      fullName: "",
+      mobile: "",
+      email: "",
+      address: "",
+      requests: "",
+      paymentMethod: "UPI"
+    }
+  });
+  const values = watch();
+  const selectedRoom = rooms.find((room) => room.id === values.roomId) || rooms[0];
+  const nights = nightsBetween(values.checkIn, values.checkOut);
+  const availableNumbers = getAvailableRoomNumbers(bookings, selectedRoom.id, values.checkIn, values.checkOut);
+  const roomAvailable = Boolean(values.checkIn && values.checkOut && availableNumbers.length);
+  const taxes = Math.round(selectedRoom.price * nights * 0.18);
+  const discount = Math.round(selectedRoom.price * nights * 0.1);
+  const total = selectedRoom.price * nights + taxes - discount;
+  const similarRooms = rooms.filter((room) => room.id !== selectedRoom.id && room.capacity >= parseCount(values.adults) + parseCount(values.children)).slice(0, 3);
+
+  const submitBooking = (data) => {
+    apiCreateBooking(data)
+      .then((result) => {
+        const created = result.booking;
+        dispatch(createBooking(created));
+        if (result.payment) dispatch(createPayment(result.payment));
+        setBooking(created);
+        toast.success(result.message || `Booking ID: ${created.id}`);
+        navigate(`/booking/${created.id}`);
+        reset({ ...data, fullName: "", mobile: "", email: "", address: "", requests: "" });
+      })
+      .catch((error) => {
+        setBooking({ blocked: true, roomType: rooms.find((item) => item.id === data.roomId)?.name || "Selected room" });
+        toast.error(error.message || "Room Not Available");
+      });
+  };
+
+  return (
+    <section className="mb-10 glass rounded-lg p-6">
+      <div className="mb-6 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <p className="text-xs uppercase tracking-[0.24em] text-gold">Complete booking process</p>
+          <h2 className="font-display text-4xl font-semibold">Book a room in {currencyLabel}</h2>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {bookingStatuses.map((status) => <span key={status} className="rounded-full border border-white/10 px-3 py-1 text-xs text-pearl/68">{status}</span>)}
+        </div>
+      </div>
+      <form onSubmit={handleSubmit(submitBooking)} className="grid gap-6 xl:grid-cols-[1.2fr_.8fr]">
+        <div className="grid gap-5">
+          <div className="grid gap-4 md:grid-cols-2">
+            <WorkflowField step="1" label="Select Check-In Date"><input className="luxury-input" type="date" {...register("checkIn", { required: true })} /></WorkflowField>
+            <WorkflowField step="2" label="Select Check-Out Date"><input className="luxury-input" type="date" {...register("checkOut", { required: true })} /></WorkflowField>
+            <WorkflowField step="3" label="Adults"><input className="luxury-input" type="number" min="1" {...register("adults", { required: true })} /></WorkflowField>
+            <WorkflowField step="3" label="Children"><input className="luxury-input" type="number" min="0" {...register("children")} /></WorkflowField>
+          </div>
+          <WorkflowField step="4" label="Choose Room Type">
+            <select className="luxury-input" {...register("roomId")}>{rooms.map((room) => <option key={room.id} value={room.id}>{room.name} - {formatINR(room.price)}/Night</option>)}</select>
+          </WorkflowField>
+          <div className="rounded-lg border border-white/10 p-4">
+            <p className="mb-3 text-sm font-bold text-gold">Step 5: View Available Rooms</p>
+            {roomAvailable ? (
+              <div className="flex flex-wrap gap-2">{availableNumbers.map((roomNumber) => <span key={roomNumber} className="rounded-md bg-emerald-500/15 px-3 py-2 text-sm text-emerald-200">Room {roomNumber} Available</span>)}</div>
+            ) : (
+              <div className="grid gap-3">
+                <p className="rounded-md bg-wine/20 px-3 py-2 text-sm font-bold text-wine">Room Not Available</p>
+                <p className="text-sm text-pearl/62">Try similar rooms or select alternative dates.</p>
+                <div className="flex flex-wrap gap-2">{similarRooms.map((room) => <span key={room.id} className="rounded-md border border-gold/25 px-3 py-1 text-xs text-gold">{room.name}</span>)}</div>
+              </div>
+            )}
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <WorkflowField step="6" label="Full Name"><input className="luxury-input" {...register("fullName", { required: true })} /></WorkflowField>
+            <WorkflowField step="6" label="Mobile Number"><input className="luxury-input" {...register("mobile", { required: true })} /></WorkflowField>
+            <WorkflowField step="6" label="Email"><input className="luxury-input" type="email" {...register("email", { required: true })} /></WorkflowField>
+            <WorkflowField step="6" label="Address"><input className="luxury-input" {...register("address", { required: true })} /></WorkflowField>
+          </div>
+          <WorkflowField step="6" label="Special Requests"><textarea className="luxury-input min-h-24" {...register("requests")} /></WorkflowField>
+        </div>
+        <div className="grid gap-5">
+          <div className="rounded-lg border border-gold/20 bg-gold/10 p-5">
+            <p className="text-sm font-bold text-gold">Step 7: Booking Summary</p>
+            <SummaryRow label="Room Type" value={selectedRoom.name} />
+            <SummaryRow label="Number of Nights" value={String(nights)} />
+            <SummaryRow label="Price Per Night" value={formatINR(selectedRoom.price)} />
+            <SummaryRow label="Taxes (GST)" value={formatINR(taxes)} />
+            <SummaryRow label="Discounts" value={`-${formatINR(discount)}`} />
+            <SummaryRow label="Total Amount" value={formatINR(total)} strong />
+          </div>
+          <WorkflowField step="8" label="Payment">
+            <select className="luxury-input" {...register("paymentMethod")}>{paymentMethods.map((method) => <option key={method}>{method}</option>)}</select>
+          </WorkflowField>
+          <button disabled={!roomAvailable} className="rounded-md bg-gold px-5 py-3 font-bold text-midnight disabled:cursor-not-allowed disabled:opacity-50">Confirm Booking</button>
+          <div className="rounded-lg border border-white/10 p-4">
+            <p className="mb-3 text-sm font-bold text-gold">Steps 9-10: Confirmation & Status</p>
+            {booking?.blocked && <p className="text-sm text-wine">Room Not Available. Duplicate booking prevented.</p>}
+            {booking && !booking.blocked && (
+              <div className="grid gap-2 text-sm text-pearl/70">
+                <p>Booking ID: <span className="text-gold">{booking.id}</span></p>
+                <p>Invoice Number: <span className="text-gold">{booking.invoice}</span></p>
+                <p>QR Code: <span className="text-gold">{booking.qr}</span></p>
+                <p>Confirmation Email: sent to {booking.customer.email}</p>
+                <p>Status: <span className="text-gold">{booking.status}</span></p>
+              </div>
+            )}
+          </div>
+        </div>
+      </form>
+    </section>
+  );
+}
+
+function WorkflowField({ step, label, children }) {
+  return (
+    <label className="grid gap-2 text-sm text-pearl/72">
+      <span><span className="font-bold text-gold">Step {step}:</span> {label}</span>
+      {children}
+    </label>
   );
 }
 
@@ -879,7 +1215,7 @@ function SmartRoomFinder({ budget, capacity, onBudget, onCapacity }) {
           <h2 className="font-display text-3xl font-semibold">Smart Room Finder</h2>
           <p className="mt-2 text-sm text-pearl/62">Filter by budget, capacity, view, amenities, floor, and rating. AI suggestion updates from your preferences.</p>
           <div className="mt-5 grid gap-4 md:grid-cols-2">
-            <label className="text-sm text-pearl/72">Budget up to ${budget}<input type="range" min="220" max="1300" value={budget} onChange={(event) => onBudget(Number(event.target.value))} className="mt-2 w-full accent-gold" /></label>
+            <label className="text-sm text-pearl/72">Budget up to {formatINR(budget)}<input type="range" min="8500" max="50000" step="500" value={budget} onChange={(event) => onBudget(Number(event.target.value))} className="mt-2 w-full accent-gold" /></label>
             <label className="text-sm text-pearl/72">Capacity {capacity}+<input type="range" min="1" max="6" value={capacity} onChange={(event) => onCapacity(Number(event.target.value))} className="mt-2 w-full accent-gold" /></label>
           </div>
           <div className="mt-4 flex flex-wrap gap-2">{["City View", "High Floor", "Jacuzzi", "Balcony", "Butler", "5 Star"].map((item) => <span key={item} className="rounded-full border border-gold/25 px-3 py-1 text-xs text-gold">{item}</span>)}</div>
@@ -905,11 +1241,23 @@ function Restaurant() {
 }
 
 function ReservationForm() {
+  const dispatch = useDispatch();
+  const reservations = useSelector((state) => state.reservations.reservations);
   const { register, handleSubmit, reset } = useForm();
-  const [sent, setSent] = useState(false);
+  const [sent, setSent] = useState(null);
+  const nextTable = restaurantTables.find(([table]) => !reservations.some((reservation) => reservation.table === table && reservation.status !== "Cancelled"))?.[0] || "Waitlist";
   return (
     <section className="py-12">
-      <form onSubmit={handleSubmit(() => { setSent(true); reset(); })} className="glass mx-auto grid max-w-3xl gap-4 rounded-lg p-6">
+      <form onSubmit={handleSubmit((data) => {
+        apiCreateReservation({ name: data.name, phone: data.phone, date: data.date, time: data.time, guests: data.guests, occasion: data.occasion })
+          .then((result) => {
+            dispatch(createReservation(result.reservation));
+            setSent(result.reservation);
+            toast.success(result.message || "Table Reserved Successfully");
+            reset();
+          })
+          .catch((error) => toast.error(error.message || "Reservation Already Exists"));
+      })} className="glass mx-auto grid max-w-3xl gap-4 rounded-lg p-6">
         <h2 className="font-display text-4xl font-semibold">Online Table Booking</h2>
         <div className="grid gap-4 md:grid-cols-2">
           <input className="luxury-input" placeholder="Name" {...register("name", { required: true })} />
@@ -920,7 +1268,7 @@ function ReservationForm() {
           <select className="luxury-input" {...register("occasion")}><option>Dinner</option><option>Anniversary</option><option>Corporate</option><option>Birthday</option></select>
         </div>
         <button className="rounded-md bg-gold px-5 py-3 font-bold text-midnight">Confirm Reservation</button>
-        {sent && <p className="text-sm text-gold">Reservation request captured.</p>}
+        {sent && <p className="text-sm text-gold">Reservation {sent.id} captured for table {sent.table}.</p>}
       </form>
     </section>
   );
@@ -949,26 +1297,57 @@ function MenuPage() {
 
 function FoodOrder() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { items, coupon } = useSelector((state) => state.cart);
+  const orders = useSelector((state) => state.orders.orders);
+  const [placedOrder, setPlacedOrder] = useState(null);
+  const { register, handleSubmit, reset } = useForm({ defaultValues: { deliveryType: "Room Delivery", name: "", roomNumber: "", mobile: "", paymentMethod: "UPI" } });
   const subtotal = items.reduce((sum, item) => sum + item.price * item.qty, 0);
   const discount = coupon === "GRAND20" ? subtotal * 0.2 : 0;
+  const delivery = items.length ? 49 : 0;
+  const taxes = Math.round((subtotal - discount) * 0.05);
+  const total = subtotal - discount + delivery + taxes;
+  const trackedStatus = placedOrder?.status || orders[0]?.status || "Order Received";
+  const placeOrder = (data) => {
+    if (!items.length) return;
+    apiCreateOrder({
+      items: items.map((item) => ({ name: item.name, qty: item.qty, price: item.price })),
+      deliveryType: data.deliveryType,
+      name: data.name,
+      roomNumber: data.roomNumber,
+      mobile: data.mobile,
+      paymentMethod: data.paymentMethod,
+      couponCode: coupon
+    })
+      .then((result) => {
+        const order = result.order;
+        dispatch(createOrder(order));
+        if (result.payment) dispatch(createPayment(result.payment));
+        dispatch(clearCart());
+        setPlacedOrder(order);
+        toast.success(result.message || `Order #${order.id}`);
+        navigate(`/order/${order.id}`);
+        reset();
+      })
+      .catch((error) => toast.error(error.message || "Order could not be placed"));
+  };
   return (
     <PageShell eyebrow="Online food ordering" title="Cart, checkout, summary, coupons, tracking">
       <div className="mb-8 grid gap-4 lg:grid-cols-3">
         <div className="glass rounded-lg p-5">
           <WandSparkles className="mb-4 h-8 w-8 text-gold" />
           <h3 className="font-display text-2xl">AI Food Recommendation</h3>
-          <p className="mt-2 text-sm text-pearl/62">Royal Butter Chicken pairs best with Sparkling Rose Mocktail and Gold Leaf Chocolate Torte.</p>
+          <p className="mt-2 text-sm text-pearl/62">Paneer Tikka pairs best with Veg Biryani and Sparkling Rose Mocktail.</p>
         </div>
         <div className="glass rounded-lg p-5">
           <RefreshCw className="mb-4 h-8 w-8 text-gold" />
           <h3 className="font-display text-2xl">Frequently Ordered</h3>
-          <p className="mt-2 text-sm text-pearl/62">Wagyu Signature Burger, Tuscan Herb Sea Bass, Sunrise Wellness Bowl.</p>
+          <p className="mt-2 text-sm text-pearl/62">Paneer Tikka, Veg Biryani, Hakka Noodles, Sunrise Wellness Bowl.</p>
         </div>
         <div className="glass rounded-lg p-5">
           <ShoppingBag className="mb-4 h-8 w-8 text-gold" />
           <h3 className="font-display text-2xl">Combo Suggestions</h3>
-          <p className="mt-2 text-sm text-pearl/62">Chef Table Combo: Risotto + Sea Bass + Chocolate Torte, 15% off demo.</p>
+          <p className="mt-2 text-sm text-pearl/62">Chef Table Combo: Paneer Tikka + Veg Biryani + Chocolate Torte, 15% off demo.</p>
         </div>
       </div>
       <div className="grid gap-6 lg:grid-cols-[1.2fr_.8fr]">
@@ -979,7 +1358,7 @@ function FoodOrder() {
               <img src={item.image} alt={item.name} className="h-24 w-full rounded-md object-cover sm:w-32" />
               <div className="flex-1">
                 <h3 className="font-display text-2xl">{item.name}</h3>
-                <p className="text-sm text-pearl/60">${item.price} • {item.category}</p>
+                <p className="text-sm text-pearl/60">{formatINR(item.price)} - {item.category}</p>
               </div>
               <div className="flex items-center gap-2">
                 <button className="grid h-9 w-9 place-items-center rounded-md border border-white/10" onClick={() => dispatch(updateQty({ id: item.id, qty: item.qty - 1 }))}><Minus className="h-4 w-4" /></button>
@@ -990,23 +1369,38 @@ function FoodOrder() {
             </div>
           ))}
         </div>
-        <div className="glass h-fit rounded-lg p-6">
+        <form onSubmit={handleSubmit(placeOrder)} className="glass h-fit rounded-lg p-6">
           <h2 className="font-display text-3xl font-semibold">Order Summary</h2>
           <input className="luxury-input mt-4" placeholder="Coupon GRAND20" onChange={(event) => dispatch(applyCoupon(event.target.value))} />
-          <SummaryRow label="Subtotal" value={`$${subtotal.toFixed(2)}`} />
-          <SummaryRow label="Discount" value={`-$${discount.toFixed(2)}`} />
-          <SummaryRow label="Delivery" value="$8.00" />
-          <SummaryRow label="Total" value={`$${(subtotal - discount + (items.length ? 8 : 0)).toFixed(2)}`} strong />
-          <button onClick={() => dispatch(clearCart())} className="mt-5 w-full rounded-md bg-gold py-3 font-bold text-midnight">Place Order</button>
+          <div className="mt-5 grid gap-3">
+            <select className="luxury-input" {...register("deliveryType")}>{deliveryTypes.map((type) => <option key={type}>{type}</option>)}</select>
+            <input className="luxury-input" placeholder="Name" {...register("name", { required: true })} />
+            <input className="luxury-input" placeholder="Room Number (Optional)" {...register("roomNumber")} />
+            <input className="luxury-input" placeholder="Mobile Number" {...register("mobile", { required: true })} />
+            <select className="luxury-input" {...register("paymentMethod")}>{foodPaymentMethods.map((method) => <option key={method}>{method}</option>)}</select>
+          </div>
+          <SummaryRow label="Subtotal" value={formatINR(subtotal)} />
+          <SummaryRow label="Discount" value={`-${formatINR(discount)}`} />
+          <SummaryRow label="Delivery" value={formatINR(delivery)} />
+          <SummaryRow label="GST" value={formatINR(taxes)} />
+          <SummaryRow label="Total" value={formatINR(total)} strong />
+          <button disabled={!items.length} className="mt-5 w-full rounded-md bg-gold py-3 font-bold text-midnight disabled:opacity-50">Place Order</button>
           <div className="mt-6 rounded-lg border border-white/10 p-4">
             <p className="mb-3 text-sm font-bold text-gold">Order Tracking</p>
-            {["Order Received", "Preparing", "Cooking", "Ready", "Delivered"].map((step, index) => <p key={step} className="border-l border-gold/40 py-2 pl-4 text-sm text-pearl/68">{index + 1}. {step}</p>)}
+            {foodStatuses.map((step, index) => <p key={step} className={`border-l py-2 pl-4 text-sm ${index <= foodStatuses.indexOf(trackedStatus) ? "border-gold text-gold" : "border-white/10 text-pearl/45"}`}>{index + 1}. {step}</p>)}
+            {placedOrder && (
+              <div className="mt-4 grid gap-1 rounded-md border border-gold/25 bg-gold/10 p-3 text-sm text-pearl/72">
+                <p>Order ID: <span className="text-gold">{placedOrder.id}</span></p>
+                <p>Invoice: <span className="text-gold">{placedOrder.invoice}</span></p>
+                <p>Payment: {placedOrder.paymentMethod} - {placedOrder.paymentStatus}</p>
+              </div>
+            )}
             <div className="mt-4 space-y-2">
               <div className="skeleton-line h-3 rounded-full" />
               <div className="skeleton-line h-3 w-2/3 rounded-full" />
             </div>
           </div>
-        </div>
+        </form>
       </div>
     </PageShell>
   );
@@ -1034,7 +1428,7 @@ function Spa() {
 }
 
 function PackageGrid({ items }) {
-  return <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">{items.map((item, index) => <div key={item} className="glass rounded-lg p-6"><Sparkles className="mb-5 h-8 w-8 text-gold" /><h3 className="font-display text-2xl">{item}</h3><p className="mt-3 text-sm text-pearl/60">From ${180 + index * 90}. Includes dedicated coordinator and premium setup.</p></div>)}</div>;
+  return <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">{items.map((item, index) => <div key={item} className="glass rounded-lg p-6"><Sparkles className="mb-5 h-8 w-8 text-gold" /><h3 className="font-display text-2xl">{item}</h3><p className="mt-3 text-sm text-pearl/60">From {formatINR(15000 + index * 7500)}. Includes dedicated coordinator and premium setup.</p></div>)}</div>;
 }
 
 function Gallery() {
@@ -1068,6 +1462,9 @@ function Gallery() {
 }
 
 function Contact() {
+  const dispatch = useDispatch();
+  const notificationItems = useSelector((state) => state.notifications.items);
+  const { register, handleSubmit, reset } = useForm();
   return (
     <PageShell eyebrow="Contact" title="Concierge, reservations, directions, and FAQs">
       <div className="grid gap-6 lg:grid-cols-[.8fr_1.2fr]">
@@ -1077,10 +1474,21 @@ function Contact() {
           <InfoLine icon={<Mail />} text="india@ideaclap@gmail.com" />
           <InfoLine icon={<Clock />} text="Restaurant 7:00 AM - 11:30 PM" />
         </div>
-        <form className="glass grid gap-4 rounded-lg p-6">
-          <input className="luxury-input" placeholder="Name" />
-          <input className="luxury-input" placeholder="Email" />
-          <textarea className="luxury-input min-h-32" placeholder="Message" />
+        <form
+          className="glass grid gap-4 rounded-lg p-6"
+          onSubmit={handleSubmit((data) => {
+            apiCreateNotification({ type: "contact", title: `Contact message from ${data.name}`, message: `${data.email}: ${data.message}` })
+              .then(() => {
+                toast.success("Message Sent Successfully");
+                dispatch(setNotifications({ items: [{ id: generateId("NTF"), type: "contact", title: `Contact message from ${data.name}`, message: data.message, read: false, createdAt: new Date().toISOString() }, ...notificationItems] }));
+                reset();
+              })
+              .catch((error) => toast.error(error.message || "Network Error"));
+          })}
+        >
+          <input className="luxury-input" placeholder="Name" {...register("name", { required: true })} />
+          <input className="luxury-input" placeholder="Email" type="email" {...register("email", { required: true })} />
+          <textarea className="luxury-input min-h-32" placeholder="Message" {...register("message", { required: true })} />
           <button className="rounded-md bg-gold py-3 font-bold text-midnight">Send Message</button>
         </form>
       </div>
@@ -1094,9 +1502,17 @@ function InfoLine({ icon, text }) {
 }
 
 function CustomerDashboard() {
+  const dispatch = useDispatch();
+  const bookings = useSelector((state) => state.booking.bookings);
+  const orders = useSelector((state) => state.orders.orders);
+  const payments = useSelector((state) => state.payments.payments);
+  const reservations = useSelector((state) => state.reservations.reservations);
+  const activeBooking = bookings[0];
+  const activeOrder = orders[0];
+  const rewardPoints = [...bookings, ...orders].reduce((sum, item) => sum + (item.rewardPoints || 0), 0);
   return (
     <PageShell eyebrow="Customer dashboard" title="Bookings, orders, reservations, profile, reviews">
-      <StatsGrid stats={[["Loyalty Points", "8,420"], ["Active Booking", "Luxury Suite"], ["Food Order", "Kitchen preparing"], ["Notifications", "4 new"]]} />
+      <StatsGrid stats={[["Loyalty Points", rewardPoints.toLocaleString("en-IN")], ["Active Booking", activeBooking?.roomType || "No booking"], ["Food Order", activeOrder?.status || "No order"], ["Notifications", `${bookings.length + orders.length} records`]]} />
       <div className="mt-8 grid gap-6 xl:grid-cols-[1.1fr_.9fr]">
         <ChartPanel title="Personal Spending Analytics">
           <ResponsiveContainer width="100%" height={260}><AreaChart data={analytics}><defs><linearGradient id="guestSpend" x1="0" x2="0" y1="0" y2="1"><stop offset="5%" stopColor="#D4AF37" stopOpacity={0.75} /><stop offset="95%" stopColor="#D4AF37" stopOpacity={0.04} /></linearGradient></defs><CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,.1)" /><XAxis dataKey="month" stroke="#f4e8c7" /><YAxis stroke="#f4e8c7" /><Tooltip /><Area type="monotone" dataKey="revenue" stroke="#D4AF37" fill="url(#guestSpend)" /></AreaChart></ResponsiveContainer>
@@ -1109,22 +1525,58 @@ function CustomerDashboard() {
         </div>
       </div>
       <div className="mt-8 grid gap-6 lg:grid-cols-3">
-        <DashboardPanel title="Hotel Bookings" items={["Current booking: Luxury Suite", "History: 12 stays", "Invoice download ready", "Booking details synced"]} />
-        <DashboardPanel title="Restaurant Reservations" items={["Reserved table: Tonight 8:00 PM", "Reservation history: 9", "Anniversary notes saved"]} />
-        <DashboardPanel title="Food Orders" items={["Active order: 4 items", "Previous orders: 18", "Live tracking enabled"]} />
+        <div className="glass rounded-lg p-5">
+          <h3 className="font-display text-2xl font-semibold">Hotel Bookings</h3>
+          <div className="mt-4 grid gap-3">
+            {bookings.map((booking) => (
+              <div key={booking.id} className="rounded-md border border-white/10 p-3 text-sm text-pearl/70">
+                <p className="font-bold text-gold">{booking.roomType} - {booking.status}</p>
+                <p>{booking.checkIn} to {booking.checkOut} | {formatINR(booking.total)}</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button onClick={() => {
+                    dispatch(cancelBooking(booking.id));
+                    const payment = payments.find((item) => item.sourceId === booking.id);
+                    if (payment) dispatch(updatePaymentStatus({ id: payment.id, status: "Refund Pending", refundStatus: "Requested" }));
+                  }} className="rounded-md border border-wine/40 px-3 py-1 text-wine">Cancel Booking</button>
+                  <button onClick={() => downloadInvoice(booking, "Booking")} className="rounded-md border border-gold/40 px-3 py-1 text-gold">Download Invoice</button>
+                </div>
+                <p className="mt-2 text-xs text-pearl/45">Payment: {payments.find((item) => item.sourceId === booking.id)?.status || booking.paymentStatus} | Tracking: {booking.status}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+        <DashboardPanel title="Restaurant Reservations" items={reservations.map((reservation) => `${reservation.table} | ${reservation.date} ${reservation.time} | ${reservation.status}`)} />
+        <div className="glass rounded-lg p-5">
+          <h3 className="font-display text-2xl font-semibold">Food Orders</h3>
+          <div className="mt-4 grid gap-3">
+            {orders.map((order) => (
+              <div key={order.id} className="rounded-md border border-white/10 p-3 text-sm text-pearl/70">
+                <p className="font-bold text-gold">{order.id} - {order.status}</p>
+                <p>{order.items.length} items | {formatINR(order.total)} | {order.paymentStatus}</p>
+                <button onClick={() => downloadInvoice(order, "Order")} className="mt-3 rounded-md border border-gold/40 px-3 py-1 text-gold">Download Invoice</button>
+              </div>
+            ))}
+          </div>
+        </div>
         <DashboardPanel title="Profile Management" items={["Personal information", "Security settings", "Address management", "Profile picture upload"]} />
         <DashboardPanel title="Reviews & Ratings" items={["Room reviews", "Food reviews", "Restaurant reviews"]} />
-        <DashboardPanel title="Notifications" items={["Spa offer", "Checkout reminder", "Chef special available"]} />
+        <DashboardPanel title="Notifications" items={[...bookings, ...orders].map((item) => item.notification || "In-app notification sent")} />
       </div>
     </PageShell>
   );
 }
 
 function AdminDashboard() {
+  const dispatch = useDispatch();
+  const bookings = useSelector((state) => state.booking.bookings);
+  const orders = useSelector((state) => state.orders.orders);
+  const payments = useSelector((state) => state.payments.payments);
+  const reservations = useSelector((state) => state.reservations.reservations);
+  const revenue = payments.filter((payment) => payment.status === "Paid").reduce((sum, item) => sum + (item.amount || 0), 0);
   const pieData = [{ name: "Rooms", value: 45 }, { name: "Dining", value: 30 }, { name: "Events", value: 15 }, { name: "Spa", value: 10 }];
   return (
     <PageShell eyebrow="Admin dashboard" title="Revenue, operations, CMS, staff, payments">
-      <StatsGrid stats={[["Total Revenue", "$460K"], ["Hotel Bookings", "286"], ["Food Orders", "510"], ["Occupancy Rate", "91%"]]} />
+      <StatsGrid stats={[["Total Revenue", formatINR(revenue)], ["Hotel Bookings", String(bookings.length)], ["Food Orders", String(orders.length)], ["Occupancy Rate", "91%"]]} />
       <div className="mt-8 grid gap-6 xl:grid-cols-2">
         <ChartPanel title="Monthly Growth">
           <ResponsiveContainer width="100%" height={290}><AreaChart data={analytics}><defs><linearGradient id="goldFill" x1="0" x2="0" y1="0" y2="1"><stop offset="5%" stopColor="#d6ad56" stopOpacity={0.8} /><stop offset="95%" stopColor="#d6ad56" stopOpacity={0.04} /></linearGradient></defs><CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,.1)" /><XAxis dataKey="month" stroke="#f4e8c7" /><YAxis stroke="#f4e8c7" /><Tooltip /><Area type="monotone" dataKey="revenue" stroke="#d6ad56" fill="url(#goldFill)" /></AreaChart></ResponsiveContainer>
@@ -1140,8 +1592,68 @@ function AdminDashboard() {
         </ChartPanel>
       </div>
       <AdminAiInsights />
+      <div className="mt-8 grid gap-6 xl:grid-cols-2">
+        <div className="glass rounded-lg p-5">
+          <h3 className="font-display text-2xl font-semibold">Manage Bookings & Payments</h3>
+          <div className="mt-4 grid gap-3">
+            {bookings.map((booking) => (
+              <div key={booking.id} className="rounded-md border border-white/10 p-3 text-sm text-pearl/70">
+                <p className="font-bold text-gold">{booking.id} | {booking.roomType} | {formatINR(booking.total)}</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {bookingStatuses.map((status) => <button key={status} onClick={() => dispatch(updateBookingStatus({ id: booking.id, status }))} className="rounded-md border border-white/10 px-2 py-1 text-xs">{status}</button>)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="glass rounded-lg p-5">
+          <h3 className="font-display text-2xl font-semibold">Kitchen Dashboard</h3>
+          <div className="mt-4 grid gap-3">
+            {orders.map((order) => (
+              <div key={order.id} className="rounded-md border border-white/10 p-3 text-sm text-pearl/70">
+                <p className="font-bold text-gold">{order.id} | {order.status} | {formatINR(order.total)}</p>
+                <p>{order.items.map((item) => `${item.qty}x ${item.name}`).join(", ")}</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {foodStatuses.map((status) => <button key={status} onClick={() => dispatch(updateOrderStatus({ id: order.id, status }))} className="rounded-md border border-white/10 px-2 py-1 text-xs">{status}</button>)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="mt-8 grid gap-6 xl:grid-cols-2">
+        <div className="glass rounded-lg p-5">
+          <h3 className="font-display text-2xl font-semibold">Manage Payments & Refunds</h3>
+          <div className="mt-4 grid gap-3">
+            {payments.map((payment) => (
+              <div key={payment.id} className="rounded-md border border-white/10 p-3 text-sm text-pearl/70">
+                <p className="font-bold text-gold">{payment.id} | {payment.type} | {formatINR(payment.amount)}</p>
+                <p>{payment.method} | {payment.status} | Refund: {payment.refundStatus}</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {["Paid", "Pending", "Failed", "Refund Pending"].map((status) => <button key={status} onClick={() => dispatch(updatePaymentStatus({ id: payment.id, status }))} className="rounded-md border border-white/10 px-2 py-1 text-xs">{status}</button>)}
+                  <button onClick={() => dispatch(updatePaymentStatus({ id: payment.id, refundStatus: "Processed" }))} className="rounded-md border border-gold/40 px-2 py-1 text-xs text-gold">Mark Refunded</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="glass rounded-lg p-5">
+          <h3 className="font-display text-2xl font-semibold">Real-Time Reservations</h3>
+          <div className="mt-4 grid gap-3">
+            {reservations.map((reservation) => (
+              <div key={reservation.id} className="rounded-md border border-white/10 p-3 text-sm text-pearl/70">
+                <p className="font-bold text-gold">{reservation.id} | {reservation.table} | {reservation.status}</p>
+                <p>{reservation.date} {reservation.time} | {reservation.guests} | {reservation.customer.name}</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {["Pending", "Reserved", "Seated", "Completed", "Cancelled"].map((status) => <button key={status} onClick={() => dispatch(updateReservationStatus({ id: reservation.id, status }))} className="rounded-md border border-white/10 px-2 py-1 text-xs">{status}</button>)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
       <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {["Hotel Management", "Restaurant Management", "Reservation Management", "Food Order Management", "Customer Management", "Staff Management", "Payments Management", "CMS Management"].map((title) => <DashboardPanel key={title} title={title} items={["List view", "Create/edit/delete", "Status workflow", "Reports"]} />)}
+        {["Manage Bookings", "Manage Payments", "Manage Food Orders", "Manage Refunds", "Manage Coupons", "Revenue Reports", "Rooms", "Reservations"].map((title) => <DashboardPanel key={title} title={title} items={["Rooms", "Bookings", "Orders", "Payments", "Reservations"]} />)}
       </div>
     </PageShell>
   );
@@ -1225,6 +1737,277 @@ function PageShell({ eyebrow, title, children }) {
         {children}
       </section>
     </div>
+  );
+}
+
+function ModalShell({ open, title, onClose, children, wide = false }) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-[80] grid place-items-center bg-black/80 p-4 backdrop-blur-sm" onClick={onClose}>
+      <motion.div
+        initial={{ opacity: 0, y: 18, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 18, scale: 0.98 }}
+        className={`glass relative w-full overflow-hidden rounded-2xl ${wide ? "max-w-4xl" : "max-w-2xl"}`}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b border-white/10 p-5">
+          <div>
+            <p className="text-xs uppercase tracking-[0.24em] text-gold">Grand Luxury</p>
+            <h3 className="font-display text-3xl font-semibold">{title}</h3>
+          </div>
+          <button onClick={onClose} className="grid h-10 w-10 place-items-center rounded-full border border-white/10 text-gold"><X className="h-5 w-5" /></button>
+        </div>
+        <div className="max-h-[80vh] overflow-auto p-5">{children}</div>
+      </motion.div>
+    </div>
+  );
+}
+
+function BookingModal() {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const open = useSelector((state) => state.ui.bookingModalOpen);
+  const roomId = useSelector((state) => (typeof state.ui.activeDialog === "string" ? state.ui.activeDialog : "suite"));
+  const { register, handleSubmit, reset, watch } = useForm({
+    defaultValues: { checkIn: "", checkOut: "", adults: "2", children: "0", roomId: roomId || "suite", fullName: "", mobile: "", email: "", address: "", requests: "", paymentMethod: "UPI" }
+  });
+  const currentRoomId = watch("roomId") || roomId || "suite";
+  const selectedRoom = rooms.find((room) => room.id === currentRoomId) || rooms[0];
+  const nights = nightsBetween(watch("checkIn"), watch("checkOut"));
+  const totals = useMemo(() => {
+    const price = selectedRoom.price * nights;
+    const taxes = Math.round(price * 0.18);
+    const discount = Math.round(price * 0.1);
+    return { taxes, discount, total: price + taxes - discount };
+  }, [nights, selectedRoom.price]);
+
+  useEffect(() => {
+    reset((current) => ({ ...current, roomId: roomId || current.roomId || "suite" }));
+  }, [roomId, reset]);
+
+  const submit = (data) => {
+    apiCreateBooking(data)
+      .then((result) => {
+        dispatch(createBooking(result.booking));
+        if (result.payment) dispatch(createPayment(result.payment));
+        toast.success(result.message || "Room Booked Successfully");
+        dispatch(closeBookingModal());
+        navigate(`/booking/${result.booking.id}`);
+        reset();
+      })
+      .catch((error) => toast.error(error.message || "Room Not Available"));
+  };
+
+  return (
+    <ModalShell open={open} title="Book a Room" onClose={() => dispatch(closeBookingModal())} wide>
+      <form onSubmit={handleSubmit(submit)} className="grid gap-5 lg:grid-cols-[1.1fr_.9fr]">
+        <div className="grid gap-4 md:grid-cols-2">
+          <label className="grid gap-2 text-sm text-pearl/70"><span>Check In</span><input className="luxury-input" type="date" {...register("checkIn", { required: true })} /></label>
+          <label className="grid gap-2 text-sm text-pearl/70"><span>Check Out</span><input className="luxury-input" type="date" {...register("checkOut", { required: true })} /></label>
+          <label className="grid gap-2 text-sm text-pearl/70"><span>Adults</span><input className="luxury-input" type="number" min="1" {...register("adults", { required: true })} /></label>
+          <label className="grid gap-2 text-sm text-pearl/70"><span>Children</span><input className="luxury-input" type="number" min="0" {...register("children")} /></label>
+        </div>
+        <div className="grid gap-4">
+          <label className="grid gap-2 text-sm text-pearl/70"><span>Room Type</span><select className="luxury-input" {...register("roomId")}>{rooms.map((room) => <option key={room.id} value={room.id}>{room.name}</option>)}</select></label>
+          <label className="grid gap-2 text-sm text-pearl/70"><span>Full Name</span><input className="luxury-input" {...register("fullName", { required: true })} /></label>
+          <label className="grid gap-2 text-sm text-pearl/70"><span>Mobile</span><input className="luxury-input" {...register("mobile", { required: true })} /></label>
+          <label className="grid gap-2 text-sm text-pearl/70"><span>Email</span><input className="luxury-input" type="email" {...register("email", { required: true })} /></label>
+          <label className="grid gap-2 text-sm text-pearl/70"><span>Address</span><input className="luxury-input" {...register("address", { required: true })} /></label>
+          <label className="grid gap-2 text-sm text-pearl/70"><span>Special Requests</span><textarea className="luxury-input min-h-24" {...register("requests")} /></label>
+          <label className="grid gap-2 text-sm text-pearl/70"><span>Payment</span><select className="luxury-input" {...register("paymentMethod")}>{paymentMethods.map((method) => <option key={method}>{method}</option>)}</select></label>
+          <div className="rounded-lg border border-gold/20 bg-gold/10 p-4 text-sm text-pearl/75">
+            <p className="font-bold text-gold">Booking Summary</p>
+            <SummaryRow label="Room" value={selectedRoom.name} />
+            <SummaryRow label="Nights" value={String(nights)} />
+            <SummaryRow label="GST" value={formatINR(totals.taxes)} />
+            <SummaryRow label="Discount" value={`-${formatINR(totals.discount)}`} />
+            <SummaryRow label="Total" value={formatINR(totals.total)} strong />
+          </div>
+          <button className="rounded-md bg-gold py-3 font-bold text-midnight">Confirm Booking</button>
+        </div>
+      </form>
+    </ModalShell>
+  );
+}
+
+function ReservationModal() {
+  const dispatch = useDispatch();
+  const open = useSelector((state) => state.ui.reservationModalOpen);
+  const { register, handleSubmit, reset } = useForm({ defaultValues: { name: "", phone: "", date: "", time: "20:00", guests: "2 guests", occasion: "Dinner" } });
+
+  const submit = (data) => {
+    apiCreateReservation(data)
+      .then((result) => {
+        dispatch(createReservation(result.reservation));
+        toast.success(result.message || "Table Reserved Successfully");
+        dispatch(closeReservationModal());
+        reset();
+      })
+      .catch((error) => toast.error(error.message || "Reservation Already Exists"));
+  };
+
+  return (
+    <ModalShell open={open} title="Reserve a Table" onClose={() => dispatch(closeReservationModal())}>
+      <form onSubmit={handleSubmit(submit)} className="grid gap-4 md:grid-cols-2">
+        <input className="luxury-input" placeholder="Name" {...register("name", { required: true })} />
+        <input className="luxury-input" placeholder="Phone" {...register("phone", { required: true })} />
+        <input className="luxury-input" type="date" {...register("date", { required: true })} />
+        <input className="luxury-input" type="time" {...register("time", { required: true })} />
+        <select className="luxury-input" {...register("guests")}><option>2 guests</option><option>4 guests</option><option>6 guests</option><option>8 guests</option></select>
+        <select className="luxury-input" {...register("occasion")}><option>Dinner</option><option>Anniversary</option><option>Corporate</option><option>Birthday</option></select>
+        <button className="md:col-span-2 rounded-md bg-gold py-3 font-bold text-midnight">Confirm Reservation</button>
+      </form>
+    </ModalShell>
+  );
+}
+
+function AuthPanel({ compact = false, onSuccess }) {
+  const dispatch = useDispatch();
+  const auth = useSelector((state) => state.auth);
+  const [mode, setMode] = useState("login");
+  const { register, handleSubmit, reset, watch } = useForm({ defaultValues: { fullName: "", email: "", password: "", mobile: "", resetToken: auth.forgotToken || "", rememberMe: true } });
+
+  const submit = (data) => {
+    const action =
+      mode === "login"
+        ? apiLogin(data)
+        : mode === "register"
+          ? apiRegister(data)
+          : mode === "forgot"
+            ? apiForgotPassword({ email: data.email })
+            : apiResetPassword({ email: data.email, resetToken: data.resetToken, password: data.password });
+
+    action
+      .then((result) => {
+        if (result.token) {
+          dispatch(setAuth({ user: result.user, token: result.token }));
+          localStorage.setItem("grandLuxuryAuthToken", result.token);
+          toast.success(result.message || "Signed in");
+          onSuccess?.();
+          reset();
+          return;
+        }
+        if (mode === "forgot") {
+          reset({ email: data.email, resetToken: result.resetToken, password: "", fullName: "", mobile: "", rememberMe: true });
+          setMode("reset");
+          toast.success("Password reset token generated");
+          return;
+        }
+        toast.success(result.message || "Password updated");
+        setMode("login");
+      })
+      .catch((error) => toast.error(error.message || "Authentication failed"));
+  };
+
+  return (
+    <form onSubmit={handleSubmit(submit)} className={`grid gap-4 ${compact ? "" : "max-w-3xl"}`}>
+      <div className="flex flex-wrap gap-2">
+        {[["login", "Login"], ["register", "Register"], ["forgot", "Forgot Password"], ["reset", "Reset Password"]].map(([value, label]) => (
+          <button key={value} type="button" onClick={() => setMode(value)} className={`rounded-full px-4 py-2 text-sm font-semibold ${mode === value ? "bg-gold text-midnight" : "border border-white/10 text-pearl/70"}`}>{label}</button>
+        ))}
+      </div>
+      {mode === "register" && <input className="luxury-input" placeholder="Full Name" {...register("fullName", { required: true })} />}
+      <input className="luxury-input" placeholder="Email" type="email" {...register("email", { required: true })} />
+      {(mode === "login" || mode === "register" || mode === "reset") && <input className="luxury-input" placeholder="Password" type="password" {...register("password", { required: true })} />}
+      {mode === "register" && <input className="luxury-input" placeholder="Mobile" {...register("mobile")} />}
+      {mode === "reset" && <input className="luxury-input" placeholder="Reset Token" {...register("resetToken", { required: true })} />}
+      {mode === "login" && (
+        <label className="flex items-center gap-2 text-sm text-pearl/70"><input type="checkbox" {...register("rememberMe")} /> Remember Me</label>
+      )}
+      <button className="rounded-md bg-gold py-3 font-bold text-midnight">
+        {mode === "login" ? "Login" : mode === "register" ? "Create Account" : mode === "forgot" ? "Send Reset Token" : "Reset Password"}
+      </button>
+      {compact && <p className="text-xs text-pearl/55">{mode === "forgot" ? "A reset token is generated by the backend and can be used immediately." : "JWT is stored securely in local storage for the current session."}</p>}
+    </form>
+  );
+}
+
+function AuthModal() {
+  const dispatch = useDispatch();
+  const open = useSelector((state) => state.ui.authModalOpen);
+  return (
+    <ModalShell open={open} title="Account Access" onClose={() => dispatch(closeAuthModal())}>
+      <AuthPanel compact onSuccess={() => dispatch(closeAuthModal())} />
+    </ModalShell>
+  );
+}
+
+function AuthPage() {
+  const dispatch = useDispatch();
+  return (
+    <PageShell eyebrow="Login system" title="Register, login, forgot password, and reset">
+      <div className="grid gap-6 lg:grid-cols-[.95fr_1.05fr]">
+        <div className="glass rounded-lg p-6">
+          <h2 className="font-display text-4xl font-bold gold-text">Secure guest access</h2>
+          <p className="mt-4 leading-8 text-pearl/70">JWT-backed authentication protects your dashboard, booking history, orders, reservations, reviews, and admin workflows.</p>
+          <div className="mt-6 grid gap-2 text-sm text-pearl/60">
+            <p>Login</p>
+            <p>Register</p>
+            <p>Forgot Password</p>
+            <p>Reset Password</p>
+            <p>Remember Me</p>
+          </div>
+          <button onClick={() => dispatch(openBookingModal())} className="mt-6 rounded-md border border-gold/60 px-4 py-2 font-bold text-gold">Book a Room</button>
+        </div>
+        <div className="glass rounded-lg p-6">
+          <AuthPanel />
+        </div>
+      </div>
+    </PageShell>
+  );
+}
+
+function BookingConfirmationPage() {
+  const { id } = useParams();
+  const booking = useSelector((state) => state.booking.bookings.find((item) => item.id === id));
+  const navigate = useNavigate();
+  if (!booking) return <Navigate to="/rooms" replace />;
+  return (
+    <PageShell eyebrow="Booking confirmation" title="Room Booked Successfully">
+      <div className="glass mx-auto max-w-3xl rounded-2xl p-8 text-center">
+        <CheckCircle2 className="mx-auto h-16 w-16 text-gold" />
+        <h2 className="mt-4 font-display text-4xl font-bold">Room Booked Successfully</h2>
+        <p className="mt-3 text-pearl/70">Booking ID: {booking.id}</p>
+        <p className="text-pearl/70">Invoice Number: {booking.invoice}</p>
+        <div className="mt-6 grid gap-2 text-left text-sm text-pearl/70">
+          <p>Room: {booking.roomType} #{booking.roomNumber}</p>
+          <p>Stay: {booking.checkIn} to {booking.checkOut}</p>
+          <p>Total: {formatINR(booking.total)}</p>
+          <p>Payment: {booking.paymentMethod} - {booking.paymentStatus}</p>
+        </div>
+        <div className="mt-8 flex flex-wrap justify-center gap-3">
+          <button onClick={() => downloadInvoice(booking, "Booking")} className="rounded-md border border-gold/50 px-4 py-2 font-bold text-gold">Download Invoice</button>
+          <button onClick={() => navigate("/dashboard")} className="rounded-md bg-gold px-4 py-2 font-bold text-midnight">Open Dashboard</button>
+        </div>
+      </div>
+    </PageShell>
+  );
+}
+
+function OrderConfirmationPage() {
+  const { id } = useParams();
+  const order = useSelector((state) => state.orders.orders.find((item) => item.id === id));
+  const navigate = useNavigate();
+  if (!order) return <Navigate to="/food-order" replace />;
+  return (
+    <PageShell eyebrow="Order confirmation" title="Order Placed Successfully">
+      <div className="glass mx-auto max-w-3xl rounded-2xl p-8 text-center">
+        <CheckCircle2 className="mx-auto h-16 w-16 text-gold" />
+        <h2 className="mt-4 font-display text-4xl font-bold">Order Placed Successfully</h2>
+        <p className="mt-3 text-pearl/70">Order #{order.id}</p>
+        <p className="text-pearl/70">Invoice: {order.invoice}</p>
+        <div className="mt-6 grid gap-2 text-left text-sm text-pearl/70">
+          <p>Items: {order.items.map((item) => `${item.qty}x ${item.name}`).join(", ")}</p>
+          <p>Total: {formatINR(order.total)}</p>
+          <p>Payment: {order.paymentMethod} - {order.paymentStatus}</p>
+        </div>
+        <div className="mt-8 flex flex-wrap justify-center gap-3">
+          <button onClick={() => downloadInvoice(order, "Order")} className="rounded-md border border-gold/50 px-4 py-2 font-bold text-gold">Download Invoice</button>
+          <button onClick={() => navigate("/dashboard")} className="rounded-md bg-gold px-4 py-2 font-bold text-midnight">Open Dashboard</button>
+        </div>
+      </div>
+    </PageShell>
   );
 }
 
@@ -1381,16 +2164,35 @@ function Chatbot() {
 }
 
 function Footer() {
+  const dispatch = useDispatch();
+  const notificationItems = useSelector((state) => state.notifications.items);
+  const { register, handleSubmit, reset } = useForm();
   return (
     <footer className="border-t border-white/10 bg-ink py-12">
       <div className="section-shell grid gap-8 md:grid-cols-4">
         <div><h2 className="font-display text-3xl font-bold gold-text">Grand Luxury</h2><p className="mt-3 text-sm text-pearl/60">Hotel, restaurant, spa, events, food ordering, and management dashboards.</p></div>
         <div><h3 className="font-bold text-gold">Quick Links</h3><div className="mt-3 grid gap-2 text-sm text-pearl/65">{navItems.slice(0, 6).map(([label, to]) => <Link key={to} to={to}>{label}</Link>)}</div></div>
         <div><h3 className="font-bold text-gold">Contact</h3><p className="mt-3 text-sm text-pearl/65">Central Avenue<br />9691368925<br />india@ideaclap@gmail.com</p></div>
-        <div><h3 className="font-bold text-gold">Newsletter</h3><input className="luxury-input mt-3" placeholder="Email address" /><button className="mt-3 rounded-md border border-gold/60 px-4 py-2 text-sm font-bold text-gold">Subscribe</button></div>
+        <form
+          className="grid"
+          onSubmit={handleSubmit((data) => {
+            apiCreateNotification({ type: "newsletter", title: "Newsletter subscription", message: `Subscriber: ${data.email}` })
+              .then(() => {
+                toast.success("Profile Updated");
+                dispatch(setNotifications({ items: [{ id: generateId("NTF"), type: "newsletter", title: "Newsletter subscription", message: data.email, read: false, createdAt: new Date().toISOString() }, ...notificationItems] }));
+                reset();
+              })
+              .catch((error) => toast.error(error.message || "Network Error"));
+          })}
+        >
+          <h3 className="font-bold text-gold">Newsletter</h3>
+          <input className="luxury-input mt-3" placeholder="Email address" type="email" {...register("email", { required: true })} />
+          <button className="mt-3 rounded-md border border-gold/60 px-4 py-2 text-sm font-bold text-gold">Subscribe</button>
+        </form>
       </div>
     </footer>
   );
 }
 
 export default App;
+

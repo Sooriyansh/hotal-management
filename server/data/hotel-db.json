@@ -1,0 +1,665 @@
+{
+  "hotel": {
+    "name": "Grand Luxury Hotel & Restaurant",
+    "address": "Central Avenue, Luxury District",
+    "phone": "9691368925",
+    "email": "india@ideaclap@gmail.com",
+    "restaurantTiming": "7:00 AM to 11:30 PM"
+  },
+  "rooms": [
+    {
+      "id": "deluxe",
+      "name": "Deluxe Room",
+      "category": "Deluxe",
+      "price": 8500,
+      "availability": "available",
+      "capacity": 2,
+      "rating": 4.8,
+      "amenities": [
+        "King bed",
+        "City view",
+        "Rain shower",
+        "Smart concierge"
+      ],
+      "images": [
+        "deluxe-room"
+      ]
+    },
+    {
+      "id": "executive",
+      "name": "Executive Room",
+      "category": "Executive",
+      "price": 12000,
+      "availability": "available",
+      "capacity": 2,
+      "rating": 4.9,
+      "amenities": [
+        "Workspace",
+        "Club lounge",
+        "Nespresso",
+        "Airport transfer"
+      ],
+      "images": [
+        "executive-room"
+      ]
+    },
+    {
+      "id": "family",
+      "name": "Family Room",
+      "category": "Family",
+      "price": 15000,
+      "availability": "available",
+      "capacity": 4,
+      "rating": 4.8,
+      "amenities": [
+        "Two bedrooms",
+        "Kids menu",
+        "Balcony",
+        "Laundry care"
+      ],
+      "images": [
+        "family-room"
+      ]
+    },
+    {
+      "id": "suite",
+      "name": "Luxury Suite",
+      "category": "Suite",
+      "price": 25000,
+      "availability": "limited",
+      "capacity": 3,
+      "rating": 5,
+      "amenities": [
+        "Private terrace",
+        "Butler service",
+        "Jacuzzi",
+        "Dining salon"
+      ],
+      "images": [
+        "luxury-suite"
+      ]
+    },
+    {
+      "id": "presidential",
+      "name": "Presidential Suite",
+      "category": "Presidential",
+      "price": 50000,
+      "availability": "limited",
+      "capacity": 6,
+      "rating": 5,
+      "amenities": [
+        "Panoramic floor",
+        "Chef on call",
+        "Boardroom",
+        "Spa bath"
+      ],
+      "images": [
+        "presidential-suite"
+      ]
+    }
+  ],
+  "restaurant": [
+    {
+      "id": "f1",
+      "name": "Paneer Tikka",
+      "category": "Indian Cuisine",
+      "price": 349,
+      "description": "Paneer, tandoori spices, mint chutney",
+      "availability": "available",
+      "ingredients": [
+        "Paneer",
+        "Tandoori spices",
+        "Mint chutney"
+      ],
+      "rating": 4.9,
+      "tags": [
+        "Chef Special",
+        "Vegetarian"
+      ]
+    },
+    {
+      "id": "f2",
+      "name": "Veg Biryani",
+      "category": "Indian Cuisine",
+      "price": 299,
+      "description": "Basmati rice, vegetables, saffron",
+      "availability": "available",
+      "ingredients": [
+        "Basmati rice",
+        "Vegetables",
+        "Saffron"
+      ],
+      "rating": 4.9,
+      "tags": [
+        "Popular",
+        "Dinner"
+      ]
+    },
+    {
+      "id": "f3",
+      "name": "Hakka Noodles",
+      "category": "Chinese Cuisine",
+      "price": 279,
+      "description": "Noodles, vegetables, wok sauce",
+      "availability": "available",
+      "ingredients": [
+        "Noodles",
+        "Vegetables",
+        "Wok sauce"
+      ],
+      "rating": 4.8,
+      "tags": [
+        "Lunch",
+        "Favorite"
+      ]
+    },
+    {
+      "id": "f4",
+      "name": "Dim Sum Imperial Basket",
+      "category": "Chinese Cuisine",
+      "price": 449,
+      "description": "Prawn, chive, sesame dipping sauce",
+      "availability": "available",
+      "ingredients": [
+        "Prawn",
+        "Chive",
+        "Sesame"
+      ],
+      "rating": 4.7,
+      "tags": [
+        "Shareable",
+        "Lunch"
+      ]
+    },
+    {
+      "id": "f5",
+      "name": "Gold Leaf Chocolate Torte",
+      "category": "Desserts",
+      "price": 399,
+      "description": "Dark chocolate, almond praline, gold leaf",
+      "availability": "available",
+      "ingredients": [
+        "Dark chocolate",
+        "Almond",
+        "Gold leaf"
+      ],
+      "rating": 4.9,
+      "tags": [
+        "Dessert",
+        "Signature"
+      ]
+    },
+    {
+      "id": "f6",
+      "name": "Sunrise Wellness Bowl",
+      "category": "Breakfast",
+      "price": 249,
+      "description": "Greek yogurt, berries, granola",
+      "availability": "available",
+      "ingredients": [
+        "Greek yogurt",
+        "Berries",
+        "Granola"
+      ],
+      "rating": 4.7,
+      "tags": [
+        "Breakfast",
+        "Healthy"
+      ]
+    },
+    {
+      "id": "f7",
+      "name": "Sparkling Rose Mocktail",
+      "category": "Beverages",
+      "price": 199,
+      "description": "Rose, citrus, sparkling water",
+      "availability": "available",
+      "ingredients": [
+        "Rose",
+        "Citrus",
+        "Sparkling water"
+      ],
+      "rating": 4.8,
+      "tags": [
+        "Beverage",
+        "Refreshing"
+      ]
+    },
+    {
+      "id": "f8",
+      "name": "Tandoori Platter",
+      "category": "Dinner",
+      "price": 699,
+      "description": "Tandoori kebabs, chutney, salad",
+      "availability": "available",
+      "ingredients": [
+        "Tandoori kebabs",
+        "Chutney",
+        "Salad"
+      ],
+      "rating": 5,
+      "tags": [
+        "Dinner",
+        "Chef Special"
+      ]
+    }
+  ],
+  "reservationsCatalog": [
+    {
+      "table": "T1",
+      "status": "available",
+      "date": "today"
+    },
+    {
+      "table": "T2",
+      "status": "booked",
+      "date": "today"
+    },
+    {
+      "table": "T3",
+      "status": "reserved",
+      "date": "today"
+    },
+    {
+      "table": "T4",
+      "status": "available",
+      "date": "today"
+    },
+    {
+      "table": "T5",
+      "status": "available",
+      "date": "today"
+    },
+    {
+      "table": "T6",
+      "status": "booked",
+      "date": "today"
+    }
+  ],
+  "events": [
+    {
+      "id": "wedding",
+      "name": "Wedding Hall Booking",
+      "category": "Wedding",
+      "price": 150000,
+      "availability": "available",
+      "description": "Luxury hall, dedicated coordinator, premium setup"
+    },
+    {
+      "id": "conference",
+      "name": "Conference Hall Booking",
+      "category": "Conference",
+      "price": 75000,
+      "availability": "available",
+      "description": "Boardroom setup, AV support, tea service"
+    },
+    {
+      "id": "birthday",
+      "name": "Birthday Party Packages",
+      "category": "Birthday",
+      "price": 45000,
+      "availability": "available",
+      "description": "Decor, cake table, curated dining menu"
+    },
+    {
+      "id": "corporate",
+      "name": "Corporate Event Packages",
+      "category": "Corporate",
+      "price": 60000,
+      "availability": "limited",
+      "description": "Networking setup, presentation support, buffet options"
+    }
+  ],
+  "spa": [
+    {
+      "id": "aroma",
+      "name": "Aroma Gold Massage",
+      "price": 15000,
+      "availability": "available",
+      "description": "Aroma therapy massage with gold wellness oil"
+    },
+    {
+      "id": "couples",
+      "name": "Couples Ritual",
+      "price": 22500,
+      "availability": "available",
+      "description": "Private couples therapy suite and wellness tea"
+    },
+    {
+      "id": "thermal",
+      "name": "Thermal Wellness Day",
+      "price": 30000,
+      "availability": "limited",
+      "description": "Thermal circuit, steam, sauna, relaxation lounge"
+    },
+    {
+      "id": "executive",
+      "name": "Executive Recovery Package",
+      "price": 37500,
+      "availability": "available",
+      "description": "Deep tissue recovery and guided relaxation"
+    }
+  ],
+  "offers": [
+    {
+      "id": "grand20",
+      "name": "GRAND20",
+      "type": "coupon",
+      "discount": "20% demo discount",
+      "status": "active",
+      "details": "Apply GRAND20 during food checkout."
+    },
+    {
+      "id": "chef-table",
+      "name": "Chef Table Combo",
+      "type": "dining",
+      "discount": "15% off demo combo",
+      "status": "active",
+      "details": "Paneer Tikka, Veg Biryani, and Chocolate Torte pairing."
+    }
+  ],
+  "analytics": {
+    "popularRooms": [
+      {
+        "name": "Luxury Suite",
+        "value": 42
+      },
+      {
+        "name": "Executive Room",
+        "value": 31
+      },
+      {
+        "name": "Family Room",
+        "value": 24
+      }
+    ],
+    "popularFoods": [
+      {
+        "name": "Paneer Tikka",
+        "value": 58
+      },
+      {
+        "name": "Veg Biryani",
+        "value": 44
+      },
+      {
+        "name": "Hakka Noodles",
+        "value": 39
+      }
+    ],
+    "bookingTrends": [
+      {
+        "month": "Jan",
+        "bookings": 128,
+        "revenue": 180
+      },
+      {
+        "month": "Feb",
+        "bookings": 148,
+        "revenue": 220
+      },
+      {
+        "month": "Mar",
+        "bookings": 176,
+        "revenue": 260
+      },
+      {
+        "month": "Apr",
+        "bookings": 205,
+        "revenue": 310
+      },
+      {
+        "month": "May",
+        "bookings": 242,
+        "revenue": 390
+      },
+      {
+        "month": "Jun",
+        "bookings": 286,
+        "revenue": 460
+      }
+    ],
+    "customerPreferences": [
+      "Suite stays",
+      "Indian dinner",
+      "Couples spa",
+      "Wedding package"
+    ]
+  },
+  "users": [
+    {
+      "id": "USR-aea3cb9d-6024-414f-aab5-aa2e9689bbdc",
+      "fullName": "r",
+      "email": "r@gmail.com",
+      "mobile": "9999999999",
+      "role": "guest",
+      "passwordHash": "1a2481017a87a24fb1218f6f0ce0a710:ddba9d802ecc41f6448ff0e716b9661a0f5a1b4ede23584ddad9fbb96723969cc97e19dceb7d0fa4b471e4da9f46df3d1acfe2e4496f1a9c924e18e287ed696b",
+      "createdAt": "2026-06-10T17:50:20.587Z",
+      "profile": {
+        "address": "",
+        "bio": ""
+      }
+    },
+    {
+      "id": "USR-GL-ADMIN-001",
+      "fullName": "Grand Luxury Admin",
+      "email": "admin@grandluxury.local",
+      "mobile": "9999999999",
+      "role": "admin",
+      "passwordHash": "0130efb39f0fbbd26a92c4ae042d35b5:b99d4dd200903c8e9d476733c0b24fdeff15d9f73b0d858e99125004df3ac5d30faa9af02f40d5d0074f4a5bcd75709991374f7d339daeabad3321372acbdc25",
+      "createdAt": "2026-06-10T17:45:48.807Z",
+      "profile": {
+        "address": "Central Avenue, Luxury District",
+        "bio": "Hotel operations admin"
+      }
+    }
+  ],
+  "bookings": [
+    {
+      "id": "BK-GL-260610-101",
+      "invoice": "INV-ROOM-260610-101",
+      "qr": "GL|BK-GL-260610-101|Confirmed",
+      "roomId": "suite",
+      "roomType": "Luxury Suite",
+      "roomNumber": "501",
+      "checkIn": "2026-06-15",
+      "checkOut": "2026-06-17",
+      "adults": 2,
+      "children": 0,
+      "nights": 2,
+      "pricePerNight": 25000,
+      "taxes": 4500,
+      "discount": 2500,
+      "total": 52000,
+      "paymentMethod": "UPI",
+      "paymentStatus": "Paid",
+      "status": "Confirmed",
+      "customer": {
+        "fullName": "Raj Patel",
+        "mobile": "9691368925",
+        "email": "raj@example.com",
+        "address": "Central Avenue",
+        "requests": "High floor room"
+      },
+      "rewardPoints": 520,
+      "userId": null,
+      "notification": "Confirmation email, WhatsApp, and in-app notification sent."
+    }
+  ],
+  "orders": [
+    {
+      "id": "ORD-GL-260610-202",
+      "invoice": "INV-FOOD-260610-102",
+      "items": [
+        {
+          "name": "Hakka Noodles",
+          "qty": 1,
+          "price": 279
+        }
+      ],
+      "deliveryType": "Room Delivery",
+      "customer": {
+        "name": "hh",
+        "roomNumber": "66",
+        "mobile": "9999999999"
+      },
+      "paymentMethod": "UPI",
+      "paymentStatus": "Paid",
+      "subtotal": 279,
+      "discount": 0,
+      "taxes": 14,
+      "delivery": 49,
+      "total": 342,
+      "status": "Order Received",
+      "rewardPoints": 3,
+      "userId": null,
+      "createdAt": "2026-06-10T17:49:58.415Z",
+      "notification": "Food ordered notification sent by email, WhatsApp, and in-app."
+    },
+    {
+      "id": "ORD-GL-260610-201",
+      "invoice": "INV-FOOD-260610-201",
+      "items": [
+        {
+          "name": "Paneer Tikka",
+          "qty": 2,
+          "price": 349
+        }
+      ],
+      "deliveryType": "Room Delivery",
+      "customer": {
+        "name": "Raj Patel",
+        "roomNumber": "501",
+        "mobile": "9691368925"
+      },
+      "paymentMethod": "UPI",
+      "paymentStatus": "Paid",
+      "subtotal": 698,
+      "discount": 140,
+      "taxes": 28,
+      "delivery": 49,
+      "total": 586,
+      "status": "Preparing",
+      "rewardPoints": 5,
+      "userId": null,
+      "notification": "Food ordered notification sent by email, WhatsApp, and in-app."
+    }
+  ],
+  "payments": [
+    {
+      "id": "PAY-GL-260610-202",
+      "sourceId": "ORD-GL-260610-202",
+      "type": "Food Order",
+      "method": "UPI",
+      "status": "Paid",
+      "amount": 342,
+      "refundStatus": "Not Requested",
+      "userId": null,
+      "createdAt": "2026-06-10T17:49:58.415Z"
+    },
+    {
+      "id": "PAY-GL-260610-101",
+      "sourceId": "BK-GL-260610-101",
+      "type": "Room Booking",
+      "method": "UPI",
+      "status": "Paid",
+      "amount": 52000,
+      "refundStatus": "Not Requested",
+      "userId": null
+    },
+    {
+      "id": "PAY-GL-260610-201",
+      "sourceId": "ORD-GL-260610-201",
+      "type": "Food Order",
+      "method": "UPI",
+      "status": "Paid",
+      "amount": 586,
+      "refundStatus": "Not Requested",
+      "userId": null
+    }
+  ],
+  "reservations": [
+    {
+      "id": "RES-GL-260610-302",
+      "table": "T1",
+      "date": "2026-06-11",
+      "time": "20:00",
+      "guests": "2 guests",
+      "occasion": "Dinner",
+      "customer": {
+        "name": "raj patel",
+        "phone": "7777777777"
+      },
+      "status": "Reserved",
+      "userId": null,
+      "createdAt": "2026-06-10T17:48:28.568Z"
+    },
+    {
+      "id": "RES-GL-260610-301",
+      "table": "T2",
+      "date": "2026-06-10",
+      "time": "20:00",
+      "guests": "2 guests",
+      "occasion": "Dinner",
+      "customer": {
+        "name": "Raj Patel",
+        "phone": "9691368925"
+      },
+      "status": "Reserved",
+      "userId": null
+    }
+  ],
+  "reviews": [],
+  "wishlist": [],
+  "notifications": [
+    {
+      "id": "fd2d3f52-3776-4128-85b8-92ab5e5e7976",
+      "type": "auth",
+      "title": "Account created",
+      "message": "r registered successfully.",
+      "read": false,
+      "createdAt": "2026-06-10T17:50:20.587Z"
+    },
+    {
+      "id": "ea0ac2ad-5996-454a-9f60-bdec681e625b",
+      "type": "order",
+      "title": "Order placed successfully",
+      "message": "Order ORD-GL-260610-202 is now order received.",
+      "read": false,
+      "createdAt": "2026-06-10T17:49:58.415Z"
+    },
+    {
+      "id": "51528e20-6d67-4368-a170-da04ac5792da",
+      "type": "reservation",
+      "title": "Table reserved successfully",
+      "message": "Table T1 reserved for raj patel.",
+      "read": false,
+      "createdAt": "2026-06-10T17:48:28.568Z"
+    },
+    {
+      "id": "01eb2160-b15b-4447-93eb-512925d90c83",
+      "type": "booking",
+      "title": "Booking confirmed",
+      "message": "Room booking is confirmed.",
+      "read": false,
+      "createdAt": "2026-06-10T17:45:48.808Z"
+    },
+    {
+      "id": "5224faeb-aac9-46fa-8568-063ba7c95a4c",
+      "type": "order",
+      "title": "Order preparing",
+      "message": "Food order entered the kitchen queue.",
+      "read": false,
+      "createdAt": "2026-06-10T17:45:48.808Z"
+    }
+  ],
+  "passwordResets": [],
+  "counters": {
+    "BK": 101,
+    "INV": 102,
+    "ORD": 202,
+    "RES": 302,
+    "PAY": 202,
+    "REV": 1
+  }
+}
